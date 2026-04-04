@@ -4,6 +4,8 @@ public enum GameState {
     START,
     MENU,
     CHARACTER_SELECT,
-    BATTLE,
+    PVP_BATTLE,
+    PVAI_BATTLE,
+    ARCADE_BATTLE,
     GAME_OVER
 }
