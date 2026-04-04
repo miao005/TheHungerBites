@@ -17,29 +17,6 @@ public class MenuScreen {
     private Rectangle arcadeBounds;
     private int hoveredIndex = -1;
 
-    // ----- ADJUST THESE VALUES TO CUSTOMIZE YOUR BUTTONS -----
-
-    // Button dimensions (width and height in pixels)
-    private int buttonWidth = 120;      // Change this to adjust button width
-    private int buttonHeight = 30;      // Change this to adjust button height
-
-    // Button positions (X and Y coordinates)
-    // You can set each button individually if they're not aligned
-    private int pvpX = 260;              // PVP button X position
-    private int pvpY = 170;              // PVP button Y position
-
-    private int pvaiX = 260;             // P V AI button X position
-    private int pvaiY = 210;             // P V AI button Y position
-
-    private int arcadeX = 260;           // Arcade button X position
-    private int arcadeY = 250;           // Arcade button Y position
-
-    // OR use this centered calculation (uncomment to use)
-    // private int centerX = (GamePanel.WIDTH - buttonWidth) / 2;
-
-    // Gap between buttons (if using automatic positioning)
-    private int buttonGap = 10;          // Space between buttons
-
     // ----- END OF CUSTOMIZATION SECTION -----
 
     public MenuScreen(GamePanel gamePanel) {
@@ -62,17 +39,6 @@ public class MenuScreen {
         } catch (IOException e) {
             System.out.println("⚠ Error loading images: " + e.getMessage());
         }
-
-        // Initialize button bounds with your custom values
-        pvpBounds = new Rectangle(pvpX, pvpY, buttonWidth, buttonHeight);
-        pvAiBounds = new Rectangle(pvaiX, pvaiY, buttonWidth, buttonHeight);
-        arcadeBounds = new Rectangle(arcadeX, arcadeY, buttonWidth, buttonHeight);
-
-        // Optional: Print button positions for debugging
-        System.out.println("Button positions:");
-        System.out.println("  PVP: (" + pvpX + ", " + pvpY + ") size: " + buttonWidth + "x" + buttonHeight);
-        System.out.println("  P V AI: (" + pvaiX + ", " + pvaiY + ") size: " + buttonWidth + "x" + buttonHeight);
-        System.out.println("  Arcade: (" + arcadeX + ", " + arcadeY + ") size: " + buttonWidth + "x" + buttonHeight);
     }
 
     public void draw(Graphics g, int width, int height) {
@@ -84,9 +50,23 @@ public class MenuScreen {
             g.fillRect(0, 0, width, height);
         }
 
+        // Calculate button size and position based on current screen size
+        int buttonWidth  = (int)(width * 0.19);   // ~19% of screen width
+        int buttonHeight = (int)(height * 0.083); // ~8% of screen height
+        int buttonX      = (width - buttonWidth) / 2; // always centered
+
+        int pvpY    = (int)(height * 0.47);
+        int pvaiY   = (int)(height * 0.58);
+        int arcadeY = (int)(height * 0.69);
+
+        // Update bounds so click detection stays accurate
+        pvpBounds    = new Rectangle(buttonX, pvpY,    buttonWidth, buttonHeight);
+        pvAiBounds   = new Rectangle(buttonX, pvaiY,   buttonWidth, buttonHeight);
+        arcadeBounds = new Rectangle(buttonX, arcadeY, buttonWidth, buttonHeight);
+
         // Draw buttons
-        drawButton(g, pvpBounds, btnPVP, "PVP", hoveredIndex == 0);
-        drawButton(g, pvAiBounds, btnPVAI, "P V AI", hoveredIndex == 1);
+        drawButton(g, pvpBounds,    btnPVP,    "PVP",    hoveredIndex == 0);
+        drawButton(g, pvAiBounds,   btnPVAI,   "P V AI", hoveredIndex == 1);
         drawButton(g, arcadeBounds, btnArcade, "ARCADE", hoveredIndex == 2);
     }
 
@@ -136,14 +116,17 @@ public class MenuScreen {
 
         if (pvpBounds.contains(mouseX, mouseY)) {
             gamePanel.setGameMode("PVP");
+            gamePanel.getCharacterSelectScreen().reset();
             gamePanel.setGameState(GameState.CHARACTER_SELECT);
             System.out.println("Selected: PVP Mode");
         } else if (pvAiBounds.contains(mouseX, mouseY)) {
             gamePanel.setGameMode("PVAI");
+            gamePanel.getCharacterSelectScreen().reset();
             gamePanel.setGameState(GameState.CHARACTER_SELECT);
             System.out.println("Selected: P V AI Mode");
         } else if (arcadeBounds.contains(mouseX, mouseY)) {
             gamePanel.setGameMode("ARCADE");
+            gamePanel.getCharacterSelectScreen().reset();
             gamePanel.setGameState(GameState.CHARACTER_SELECT);
             System.out.println("Selected: ARCADE Mode");
         }

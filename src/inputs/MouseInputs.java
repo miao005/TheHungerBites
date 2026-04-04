@@ -30,6 +30,15 @@ public class MouseInputs implements MouseListener, MouseMotionListener {
             case CHARACTER_SELECT:
                 gamePanel.getCharacterSelectScreen().mouseClicked(mouseX, mouseY);
                 break;
+            case BATTLE:
+                gamePanel.getBattleScreen().mouseClicked(mouseX, mouseY);
+                break;
+            case ARCADE_REWARD:
+                gamePanel.getArcadeRewardScreen().mouseClicked(mouseX, mouseY);
+                break;
+            case GAME_OVER:
+                gamePanel.getGameOverScreen().mouseClicked(mouseX, mouseY);
+                break;
             default:
                 break;
         }

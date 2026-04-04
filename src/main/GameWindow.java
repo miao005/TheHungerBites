@@ -1,6 +1,7 @@
 package main;
 
 import javax.swing.JFrame;
+import java.awt.*;
 
 public class GameWindow {
     public JFrame jframe;
@@ -9,7 +10,8 @@ public class GameWindow {
         jframe = new JFrame();
         jframe.setTitle("The Hunger Bites");
         jframe.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        jframe.setResizable(false); // Important for pixel art
+
+        jframe.setResizable(true); // Important for pixel art
         jframe.add(gamePanel);
         jframe.pack();
         jframe.setLocationRelativeTo(null);
