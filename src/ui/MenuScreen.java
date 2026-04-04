@@ -25,14 +25,11 @@ public class MenuScreen {
         try {
             // Load background image
             background = ImageIO.read(getClass().getResourceAsStream("/resources/menu(1).png"));
-            if (background == null) {
-                background = ImageIO.read(getClass().getResourceAsStream("/resources/menu.png"));
-            }
 
             // Load button images
-            btnPVP = ImageIO.read(getClass().getResourceAsStream("/resources/btn_pvp.png"));
-            btnPVAI = ImageIO.read(getClass().getResourceAsStream("/resources/btn_pvai.png"));
-            btnArcade = ImageIO.read(getClass().getResourceAsStream("/resources/btn_arcade.png"));
+            btnPVP = ImageIO.read(getClass().getResourceAsStream("/resources/buttons/btn_pvp.png"));
+            btnPVAI = ImageIO.read(getClass().getResourceAsStream("/resources/buttons/btn_pvai.png"));
+            btnArcade = ImageIO.read(getClass().getResourceAsStream("/resources/buttons/btn_arcade.png"));
 
             System.out.println("✓ MenuScreen images loaded!");
 

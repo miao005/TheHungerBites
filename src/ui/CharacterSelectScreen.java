@@ -8,33 +8,77 @@ import main.GameState;
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+
 
 public class CharacterSelectScreen {
     private GamePanel gamePanel;
     private CharacterManager characterManager;
+
+    // Background + button images
+    private BufferedImage background;
+    private BufferedImage imgSelect, imgReturn, imgArrowLeft, imgArrowRight;
+
+    // Character sprites
+    private Map<String, BufferedImage> sprites = new HashMap<>();
+
+    //Font
+    private Font pixelFont;
+
+    // Selection state
     private int p1Index = 0;
     private int p2Index = 1;
     private boolean selectingP1 = true;
-    private Map<String, BufferedImage> sprites = new HashMap<>();
+
+    // Hover state  (-1 = none, 0 = left, 1 = right, 2 = select, 3 = return)
+    private int hoveredIndex = -1;
+
+    // Hit-zones — recalculated every draw()
     private Rectangle leftArrow, rightArrow, selectBtn, returnBtn;
 
     public CharacterSelectScreen(GamePanel gamePanel, CharacterManager characterManager) {
         this.gamePanel = gamePanel;
         this.characterManager = characterManager;
+
+        // Load custom font
+        try {
+            pixelFont = Font.createFont(Font.TRUETYPE_FONT,
+                            getClass().getResourceAsStream("/resources/fonts/ARCADE_N.TTF"))
+                    .deriveFont(Font.PLAIN, 16f);
+        } catch (Exception e) {
+            pixelFont = new Font("Monospaced", Font.BOLD, 16); // fallback
+        }
+
+
+        loadImages();
         loadSprites();
     }
 
+    private void loadImages() {
+        background   = tryLoad("/resources/character_select_bg.png");
+        imgSelect    = tryLoad("/resources/buttons/btn_select.png");
+        imgReturn    = tryLoad("/resources/buttons/btn_return.png");
+        imgArrowLeft  = tryLoad("/resources/buttons/arrow_left.png");
+        imgArrowRight = tryLoad("/resources/buttons/arrow_right.png");
+    }
+
+    private BufferedImage tryLoad(String path) {
+        try {
+            return ImageIO.read(getClass().getResourceAsStream(path));
+        } catch (Exception e) {
+            return null; // will use placeholder
+        }
+    }
+
     private void loadSprites() {
-        String[] names = {"Jollibee", "RonaldMcDonald", "BurgerKing", "ColonelSanders",
-                "TacoBell", "Wendys", "Poco", "Julies"};
-        for (String name : names) {
-            try {
-                BufferedImage img = ImageIO.read(getClass().getResourceAsStream("/resources/sprites/" + name + ".png"));
-                if (img != null) sprites.put(name, img);
-            } catch (Exception ignored) {}
+        String[] names = {
+                "Jollibee","RonaldMcDonald","BurgerKing","ColonelSanders",
+                "TacoBell","Wendys","Poco","Julies"
+        };
+        for (String n : names) {
+            BufferedImage img = tryLoad("/resources/sprites/" + n + ".png");
+            if (img != null) sprites.put(n, img);
         }
     }
 
@@ -42,294 +86,304 @@ public class CharacterSelectScreen {
         p1Index = 0;
         p2Index = 1;
         selectingP1 = true;
+        hoveredIndex = -1;
     }
 
-
+    // ──────────Images (buttons, etc) ────────────────────────────────────────
     public void draw(Graphics g, int width, int height) {
         Graphics2D g2d = (Graphics2D) g;
-        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING,      RenderingHints.VALUE_ANTIALIAS_ON);
         g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
 
-        String mode = gamePanel.getGameMode();
-        boolean isPvp = mode.equals("PVP");
         int currentIndex = selectingP1 ? p1Index : p2Index;
-        Character currentChar = characterManager.createCharacter(currentIndex);
+        Character ch = characterManager.createCharacter(currentIndex);
+
+        // ──  Background ─────────────────────────────────────────────
+        if (background != null) {
+            g2d.drawImage(background, 0, 0, width, height, null);
+        } else {
+            drawFallbackBackground(g2d, width, height);
+        }
+
+        // ──  Player label ───────────────────────────────────────────
+        boolean isPvp = gamePanel.getGameMode().equals("PVP");
         String playerLabel = selectingP1 ? "PLAYER 1" : (isPvp ? "PLAYER 2" : "PLAYER 1");
-
-        // Background
-        g2d.setColor(new Color(10, 10, 60));
-        g2d.fillRect(0, 0, width, height);
-
-        // Player label
-        g2d.setFont(new Font("Monospaced", Font.BOLD, scaleFont(width, 28)));
+        g2d.setFont(pixelFont.deriveFont((float) sf(width, 20)));
         g2d.setColor(Color.WHITE);
         FontMetrics fm = g2d.getFontMetrics();
-        g2d.drawString(playerLabel, (width - fm.stringWidth(playerLabel)) / 2, (int)(height * 0.09));
+        g2d.drawString(playerLabel,
+                (width - fm.stringWidth(playerLabel)) / 2,
+                (int)(height * 0.09));
 
-        // Main card bounds
-        int cardX = (int)(width * 0.12);
-        int cardW = (int)(width * 0.76);
-        int cardY = (int)(height * 0.11);
-        int cardH = (int)(height * 0.73);
-
-        // Card border
-        g2d.setColor(new Color(20, 20, 80));
-        g2d.fillRoundRect(cardX, cardY, cardW, cardH, 12, 12);
-        g2d.setColor(new Color(220, 80, 160));
-        g2d.setStroke(new BasicStroke(3));
-        g2d.drawRoundRect(cardX, cardY, cardW, cardH, 12, 12);
-        g2d.setStroke(new BasicStroke(1));
-
-        // Header
-        int headerH = (int)(cardH * 0.22);
-        g2d.setColor(new Color(230, 100, 170));
-        g2d.fillRect(cardX, cardY, cardW, headerH);
-
-        // Sprite
-        String spriteKey = currentChar.getName().replaceAll("[^a-zA-Z]", "");
-        BufferedImage sprite = sprites.get(spriteKey);
-        int spriteSize = (int)(headerH * 0.85);
-        int spriteX = cardX + (int)(cardW * 0.04);
-        int spriteY = cardY + (headerH - spriteSize) / 2;
+        // ──  Character sprite ───────────────────────────────────────
+        int spriteSize = (int)(height * 0.135);
+        int spriteX    = (int)(width  * 0.19);
+        int spriteY    = (int)(height * 0.115);
+        String key = ch.getName().replaceAll("[^a-zA-Z]", "");
+        BufferedImage sprite = sprites.get(key);
         if (sprite != null) {
             g2d.drawImage(sprite, spriteX, spriteY, spriteSize, spriteSize, null);
         } else {
-            g2d.setColor(new Color(255, 200, 100));
+            // Placeholder circle
+            g2d.setColor(new Color(255, 200, 100, 200));
             g2d.fillOval(spriteX, spriteY, spriteSize, spriteSize);
-            g2d.setColor(new Color(180, 80, 40));
-            g2d.setFont(new Font("Monospaced", Font.BOLD, scaleFont(width, 10)));
-            g2d.drawString("?", spriteX + spriteSize/2 - 4, spriteY + spriteSize/2 + 4);
+            g2d.setColor(Color.WHITE);
+            g2d.setFont(new Font("Monospaced", Font.BOLD, sf(width, 10)));
+            g2d.drawString("?", spriteX + spriteSize / 2 - 4, spriteY + spriteSize / 2 + 4);
         }
 
-        // Character name
-        g2d.setFont(new Font("Monospaced", Font.BOLD, scaleFont(width, 26)));
+        // ──  Character name ─────────────────────────────────────────
+        g2d.setFont(pixelFont.deriveFont((float) sf(width, 20)));
         g2d.setColor(Color.WHITE);
         fm = g2d.getFontMetrics();
-        String charName = currentChar.getName().toUpperCase();
-        int nameX = spriteX + spriteSize + (int)(cardW * 0.04);
-        int nameY = cardY + headerH / 2 + fm.getAscent() / 2;
-        g2d.drawString(charName, nameX, nameY);
+        String charName = ch.getName().toUpperCase();
+        int nameAreaL   = (int)(width * 0.25);
+        int nameAreaW   = (int)(width * 0.50);
+        g2d.drawString(charName,
+                nameAreaL + (nameAreaW - fm.stringWidth(charName)) / 2,
+                (int)(height * 0.215));
 
-        // Two-panel body
-        int bodyY = cardY + headerH + 2;
-        int bodyH = cardH - headerH - 2;
-        int halfW = cardW / 2;
-
-        g2d.setColor(new Color(240, 230, 245));
-        g2d.fillRect(cardX, bodyY, halfW, bodyH);
-        g2d.fillRect(cardX + halfW, bodyY, halfW, bodyH);
-
-        g2d.setColor(new Color(180, 80, 160));
-        g2d.setStroke(new BasicStroke(2));
-        g2d.drawLine(cardX + halfW, bodyY, cardX + halfW, bodyY + bodyH);
-        g2d.setStroke(new BasicStroke(1));
-
-        // LORE title
-        int panelPad = (int)(cardW * 0.04);
-        g2d.setFont(new Font("Monospaced", Font.BOLD, scaleFont(width, 18)));
-        g2d.setColor(new Color(220, 60, 140));
-        String loreTitle = "LORE";
-        fm = g2d.getFontMetrics();
-        g2d.drawString(loreTitle, cardX + (halfW - fm.stringWidth(loreTitle)) / 2, bodyY + (int)(bodyH * 0.1));
-
-        // SKILLS title
-        String skillsTitle = "SKILLS";
-        g2d.drawString(skillsTitle, cardX + halfW + (halfW - fm.stringWidth(skillsTitle)) / 2, bodyY + (int)(bodyH * 0.1));
-
-        // Lore text
-        g2d.setFont(new Font("Monospaced", Font.PLAIN, scaleFont(width, 11)));
+        // ──  Lore text ──────────────────────────────────────────────
+        g2d.setFont(new Font("Monospaced", Font.BOLD, sf(width, 9)));
         g2d.setColor(new Color(30, 20, 60));
-        drawWrappedText(g2d, currentChar.getBackstory(),
-                cardX + panelPad, bodyY + (int)(bodyH * 0.16),
-                halfW - panelPad * 2, (int)(bodyH * 0.78));
+        drawWrappedText(g2d, ch.getBackstory(),
+                (int)(width  * 0.200), (int)(height * 0.40),
+                (int)(width  * 0.290), (int)(height * 0.46));
 
-        // Skills text
-        int skillsX = cardX + halfW + panelPad;
-        int skillsY = bodyY + (int)(bodyH * 0.16);
-        int lineH = (int)(bodyH * 0.13);
-        g2d.setColor(new Color(30, 20, 60));
-        g2d.setFont(new Font("Monospaced", Font.PLAIN, scaleFont(width, 11)));
+        // ──  Skills text ────────────────────────────────────────────
+        int sx  = (int)(width  * 0.515);
+        int sy  = (int)(height * 0.40);
+        int sw  = (int)(width  * 0.295);
+        int sh  = (int)(height * 0.46);
+        int gap = (int)(sh * 0.25);
 
-        drawSkillEntry(g2d, "BASIC ATTACK: " + currentChar.getBasicAttackName(),
-                "DAMAGE: " + getBasicDmgRange(currentIndex) + "\nMANA COST: 0",
-                skillsX, skillsY, halfW - panelPad * 2, lineH * 3, width);
+        drawSkillBlock(g2d,
+                "BASIC ATTACK: " + ch.getBasicAttackName(),
+                "DAMAGE: " + getBasicDmgRange(currentIndex) + "  MANA: 0",
+                sx, sy, sw, width);
+        drawSkillBlock(g2d,
+                "SKILL: " + ch.getSkillAttackName(),
+                "DAMAGE: " + getSkillDmgRange(currentIndex) + "  MANA: 30",
+                sx, sy + gap, sw, width);
+        drawSkillBlock(g2d,
+                "ULTIMATE: " + ch.getUltimateAttackName(),
+                "DAMAGE: " + getUltiDmgRange(currentIndex) + "  MANA: 50",
+                sx, sy + gap * 2, sw, width);
 
-        drawSkillEntry(g2d, "SKILL: " + currentChar.getSkillAttackName(),
-                "DAMAGE: " + getSkillDmgRange(currentIndex) + "\nMANA COST: 30",
-                skillsX, skillsY + (int)(bodyH * 0.30), halfW - panelPad * 2, lineH * 3, width);
+        // ──  Calculate button bounds ────────────────────────────────
+        int arrowSize  = (int)(height * 0.18);
+        int arrowY     = (int)(height * 0.37);
+        leftArrow  = new Rectangle((int)(width * 0.02), arrowY, arrowSize, arrowSize);
+        rightArrow = new Rectangle((int)(width * 0.88), arrowY, arrowSize, arrowSize);
 
-        drawSkillEntry(g2d, "ULTIMATE: " + currentChar.getUltimateAttackName(),
-                "DAMAGE: " + getUltiDmgRange(currentIndex) + "\nMANA COST: 50",
-                skillsX, skillsY + (int)(bodyH * 0.58), halfW - panelPad * 2, lineH * 3, width);
+        returnBtn = new Rectangle(
+                (int)(width * 0.03), (int)(height * 0.85),
+                (int)(width * 0.15), (int)(height * 0.11));
+        selectBtn = new Rectangle(
+                (int)(width * 0.35), (int)(height * 0.84),
+                (int)(width * 0.30), (int)(height * 0.17));
 
-        // HP/Mana stats
-        g2d.setFont(new Font("Monospaced", Font.BOLD, scaleFont(width, 10)));
-        g2d.setColor(new Color(100, 0, 80));
-        g2d.drawString("HP: " + currentChar.getMaxHealth() + "  |  MANA: " + currentChar.getMaxMana(),
-                skillsX, bodyY + (int)(bodyH * 0.92));
+        // ──  Draw buttons (PNG or placeholder) + hover glow ─────────
+        drawButton(g2d, leftArrow,  imgArrowLeft,  "LEFT", hoveredIndex == 0, false, width);
+        drawButton(g2d, rightArrow, imgArrowRight, "RIGHT", hoveredIndex == 1, false, width);
+        drawButton(g2d, returnBtn,  imgReturn,     "RETURN", hoveredIndex == 3, true, width);
+        drawButton(g2d, selectBtn,  imgSelect,     "SELECT", hoveredIndex == 2, true, width);
 
-        // Arrow buttons
-        int arrowSize = (int)(height * 0.10);
-        int arrowY = (int)(height * 0.40);
-        leftArrow = new Rectangle((int)(width * 0.02), arrowY, arrowSize, arrowSize);
-        rightArrow = new Rectangle((int)(width * 0.90), arrowY, arrowSize, arrowSize);
-        drawArrow(g2d, leftArrow, false);
-        drawArrow(g2d, rightArrow, true);
-
-        // Bottom buttons
-        int btnH = (int)(height * 0.09);
-        int btnY = (int)(height * 0.87);
-        returnBtn = new Rectangle((int)(width * 0.04), btnY, (int)(width * 0.18), btnH);
-        selectBtn = new Rectangle((int)(width * 0.35), btnY, (int)(width * 0.30), btnH);
-        drawPillButton(g2d, returnBtn, "RETURN", new Color(220, 80, 160), Color.WHITE, width);
-        drawPillButton(g2d, selectBtn, "SELECT", new Color(220, 80, 160), Color.WHITE, width);
-
-        // Dot indicators
+        // ──  Dot indicators ─────────────────────────────────────────
         int dotCount = characterManager.getRosterSize();
-        int dotSize = Math.max(6, width / 80);
-        int dotSpacing = dotSize + 4;
-        int dotsW = dotCount * dotSpacing;
-        int dotStartX = (width - dotsW) / 2;
-        int dotY = (int)(height * 0.84);
+        int dotSize  = Math.max(5, width / 90);
+        int spacing  = dotSize + 5;
+        int dotStartX = (width - dotCount * spacing) / 2;
+        int dotY      = (int)(height * 0.815);
         for (int i = 0; i < dotCount; i++) {
-            g2d.setColor(i == currentIndex ? new Color(220, 80, 160) : new Color(80, 60, 120));
-            g2d.fillOval(dotStartX + i * dotSpacing, dotY, dotSize, dotSize);
-        }
-
-        // Mode hint
-        g2d.setFont(new Font("Monospaced", Font.PLAIN, scaleFont(width, 10)));
-        g2d.setColor(new Color(160, 140, 200));
-        String hint = "Mode: " + mode + (isPvp && !selectingP1 ? "  [Selecting Player 2]" : "");
-        g2d.drawString(hint, (int)(width * 0.04), (int)(height * 0.975));
-    }
-
-    private void drawSkillEntry(Graphics2D g2d, String title, String details, int x, int y, int maxW, int h, int screenW) {
-        g2d.setFont(new Font("Monospaced", Font.BOLD, scaleFont(screenW, 10)));
-        g2d.setColor(new Color(60, 0, 80));
-        drawWrappedText(g2d, title, x, y, maxW, g2d.getFontMetrics().getHeight() * 2);
-        g2d.setFont(new Font("Monospaced", Font.PLAIN, scaleFont(screenW, 10)));
-        g2d.setColor(new Color(60, 40, 80));
-        String[] lines = details.split("\n");
-        int lh = g2d.getFontMetrics().getHeight();
-        for (int i = 0; i < lines.length; i++) {
-            g2d.drawString(lines[i], x, y + lh * 2 + lh * i);
+            g2d.setColor(i == currentIndex
+                    ? new Color(255, 100, 180)
+                    : new Color(120, 80, 160));
+            g2d.fillOval(dotStartX + i * spacing, dotY, dotSize, dotSize);
         }
     }
 
-    private void drawArrow(Graphics2D g2d, Rectangle bounds, boolean pointRight) {
-        g2d.setColor(new Color(220, 80, 160));
-        int cx = bounds.x + bounds.width / 2;
-        int cy = bounds.y + bounds.height / 2;
-        int r = bounds.width / 2 - 4;
-        int[] xs, ys;
-        if (pointRight) {
-            xs = new int[]{cx - r, cx + r, cx - r};
-            ys = new int[]{cy - r, cy, cy + r};
+    // ── Button draw (mirrors MenuScreen logic) ────────────────────────
+    private void drawButton(Graphics2D g2d, Rectangle bounds, BufferedImage img,
+                            String fallbackLabel, boolean hovered,
+                            boolean isTextButton, int screenW) {
+        if (bounds == null) return;
+
+        if (img != null) {
+            // Draw the PNG scaled to bounds
+            g2d.drawImage(img, bounds.x, bounds.y, bounds.width, bounds.height, null);
+
+            // Gold glow hover (same as MenuScreen)
+            if (hovered) {
+                g2d.setColor(new Color(255, 215, 0, 100));
+                g2d.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);
+                g2d.setColor(new Color(255, 215, 0, 200));
+                g2d.setStroke(new BasicStroke(3));
+                g2d.drawRect(bounds.x - 2, bounds.y - 2, bounds.width + 4, bounds.height + 4);
+                g2d.setStroke(new BasicStroke(1));
+            }
         } else {
-            xs = new int[]{cx + r, cx - r, cx + r};
-            ys = new int[]{cy - r, cy, cy + r};
+            // ── Placeholder ───────────────────────────────────────────
+            g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+            Color base  = isTextButton ? new Color(220, 80, 160) : new Color(200, 70, 150);
+            Color hover = isTextButton ? new Color(255, 120, 200) : new Color(255, 100, 180);
+            g2d.setColor(hovered ? hover : base);
+            g2d.fillRoundRect(bounds.x, bounds.y, bounds.width, bounds.height, 20, 20);
+
+            // Gold glow border on hover
+            if (hovered) {
+                g2d.setColor(new Color(255, 215, 0, 220));
+                g2d.setStroke(new BasicStroke(3));
+                g2d.drawRoundRect(bounds.x - 2, bounds.y - 2,
+                        bounds.width + 4, bounds.height + 4, 22, 22);
+                g2d.setStroke(new BasicStroke(1));
+            } else {
+                g2d.setColor(new Color(255, 150, 210));
+                g2d.setStroke(new BasicStroke(2));
+                g2d.drawRoundRect(bounds.x, bounds.y, bounds.width, bounds.height, 20, 20);
+                g2d.setStroke(new BasicStroke(1));
+            }
+
+            // Label
+            int fontSize = Math.max(8, (int)(bounds.height * 0.45));
+            g2d.setFont(new Font("Monospaced", Font.BOLD, fontSize));
+            g2d.setColor(Color.WHITE);
+            FontMetrics fm = g2d.getFontMetrics();
+            g2d.drawString(fallbackLabel,
+                    bounds.x + (bounds.width  - fm.stringWidth(fallbackLabel)) / 2,
+                    bounds.y + (bounds.height + fm.getAscent() - fm.getDescent()) / 2);
         }
-        g2d.fillPolygon(xs, ys, 3);
     }
 
-    private void drawPillButton(Graphics2D g2d, Rectangle bounds, String text, Color bg, Color fg, int screenW) {
-        g2d.setColor(bg);
-        g2d.fillRoundRect(bounds.x, bounds.y, bounds.width, bounds.height, 30, 30);
-        g2d.setColor(fg);
-        g2d.setFont(new Font("Monospaced", Font.BOLD, scaleFont(screenW, 16)));
-        FontMetrics fm = g2d.getFontMetrics();
-        int tx = bounds.x + (bounds.width - fm.stringWidth(text)) / 2;
-        int ty = bounds.y + (bounds.height + fm.getAscent() - fm.getDescent()) / 2;
-        g2d.drawString(text, tx, ty);
+    // ── Skill block ───────────────────────────────────────────────────
+    private void drawSkillBlock(Graphics2D g2d, String title, String details,
+                                int x, int y, int maxW, int screenW) {
+        int lh = g2d.getFontMetrics().getHeight();
+        g2d.setFont(new Font("Monospaced", Font.BOLD, sf(screenW, 9)));
+        g2d.setColor(new Color(50, 0, 70));
+        drawWrappedText(g2d, title, x, y, maxW, lh * 2);
+
+        g2d.setFont(new Font("Monospaced", Font.PLAIN, sf(screenW, 9)));
+        g2d.setColor(new Color(60, 40, 80));
+        String[] parts = details.split("  ");
+        for (int i = 0; i < parts.length; i++)
+            g2d.drawString(parts[i], x, y + lh * (i + 2));
     }
 
-    private void drawWrappedText(Graphics2D g2d, String text, int x, int y, int maxWidth, int maxHeight) {
-        if (text == null) return;
+    // ── Wrapped text ──────────────────────────────────────────────────
+    private void drawWrappedText(Graphics2D g2d, String text,
+                                 int x, int y, int maxW, int maxH) {
+        if (text == null || text.isEmpty()) return;
         FontMetrics fm = g2d.getFontMetrics();
-        int lineH = fm.getHeight();
+        int lh = fm.getHeight();
         String[] words = text.split(" ");
         StringBuilder line = new StringBuilder();
-        int curY = y + lineH;
+        int curY = y + lh;
         for (String word : words) {
             String test = line.length() == 0 ? word : line + " " + word;
-            if (fm.stringWidth(test) > maxWidth) {
-                if (curY - y + lineH > maxHeight) break;
+            if (fm.stringWidth(test) > maxW) {
+                if (curY - y > maxH) break;
                 g2d.drawString(line.toString(), x, curY);
-                curY += lineH;
+                curY += lh;
                 line = new StringBuilder(word);
             } else {
                 line = new StringBuilder(test);
             }
         }
-        if (line.length() > 0 && curY - y <= maxHeight) {
+        if (line.length() > 0 && curY - y <= maxH)
             g2d.drawString(line.toString(), x, curY);
-        }
     }
 
-    private int scaleFont(int width, int base) {
-        return Math.max(8, (int)(base * width / 640.0));
+    // ── Fallback background when PNG is missing ───────────────────────
+    private void drawFallbackBackground(Graphics2D g2d, int w, int h) {
+        g2d.setColor(new Color(10, 10, 60));
+        g2d.fillRect(0, 0, w, h);
+
+        g2d.setColor(new Color(20, 20, 80));
+        g2d.fillRoundRect((int)(w*.17),(int)(h*.10),(int)(w*.66),(int)(h*.72),12,12);
+        g2d.setColor(new Color(220,80,160));
+        g2d.setStroke(new BasicStroke(3));
+        g2d.drawRoundRect((int)(w*.17),(int)(h*.10),(int)(w*.66),(int)(h*.72),12,12);
+        g2d.setStroke(new BasicStroke(1));
+
+        g2d.setColor(new Color(230,100,170));
+        g2d.fillRect((int)(w*.17),(int)(h*.10),(int)(w*.66),(int)(h*.155));
+
+        g2d.setColor(new Color(240,230,245));
+        g2d.fillRect((int)(w*.17),(int)(h*.255),(int)(w*.33),(int)(h*.555));
+        g2d.fillRect((int)(w*.50),(int)(h*.255),(int)(w*.33),(int)(h*.555));
+
+        g2d.setColor(new Color(180,80,160));
+        g2d.setStroke(new BasicStroke(2));
+        g2d.drawLine((int)(w*.50),(int)(h*.255),(int)(w*.50),(int)(h*.81));
+        g2d.setStroke(new BasicStroke(1));
+
+        g2d.setFont(new Font("Monospaced", Font.BOLD, sf(w, 16)));
+        g2d.setColor(new Color(220,60,140));
+        FontMetrics fm = g2d.getFontMetrics();
+        g2d.drawString("LORE",
+                (int)(w*.17)+((int)(w*.33)-fm.stringWidth("LORE"))/2, (int)(h*.305));
+        g2d.drawString("SKILLS",
+                (int)(w*.50)+((int)(w*.33)-fm.stringWidth("SKILLS"))/2, (int)(h*.305));
     }
 
-    private String getBasicDmgRange(int idx) {
-        int[][] ranges = {{16,22},{17,23},{22,28},{18,22},{20,26},{18,26},{15,20},{19,25}};
-        return idx < ranges.length ? ranges[idx][0] + " - " + ranges[idx][1] : "?";
+    // ── Scale helper ──────────────────────────────────────────────────
+    private int sf(int width, int base) {
+        return Math.max(7, (int)(base * width / 640.0));
     }
 
-    private String getSkillDmgRange(int idx) {
-        int[][] ranges = {{24,32},{26,34},{30,40},{25,32},{30,38},{25,33},{22,28},{28,36}};
-        return idx < ranges.length ? ranges[idx][0] + " - " + ranges[idx][1] : "?";
+    // ── Damage ranges ─────────────────────────────────────────────────
+    private String getBasicDmgRange(int i) {
+        int[][] r = {{16,22},{17,23},{22,28},{18,22},{20,26},{18,26},{15,20},{19,25}};
+        return i < r.length ? r[i][0]+" - "+r[i][1] : "?";
+    }
+    private String getSkillDmgRange(int i) {
+        int[][] r = {{24,32},{26,34},{30,40},{25,32},{30,38},{25,33},{22,28},{28,36}};
+        return i < r.length ? r[i][0]+" - "+r[i][1] : "?";
+    }
+    private String getUltiDmgRange(int i) {
+        int[][] r = {{38,48},{41,51},{45,55},{40,50},{45,58},{40,52},{35,45},{43,55}};
+        return i < r.length ? r[i][0]+" - "+r[i][1] : "?";
     }
 
-    private String getUltiDmgRange(int idx) {
-        int[][] ranges = {{38,48},{41,51},{45,55},{40,50},{45,58},{40,52},{35,45},{43,55}};
-        return idx < ranges.length ? ranges[idx][0] + " - " + ranges[idx][1] : "?";
-    }
-
-
-
+    // ── Mouse input ───────────────────────────────────────────────────
     public void mouseClicked(int mx, int my) {
-        String mode = gamePanel.getGameMode();
-        boolean isPvp = mode.equals("PVP");
+        boolean isPvp = gamePanel.getGameMode().equals("PVP");
 
         if (leftArrow != null && leftArrow.contains(mx, my)) {
-            if (selectingP1) {
-                p1Index = (p1Index - 1 + characterManager.getRosterSize()) % characterManager.getRosterSize();
-            } else {
-                p2Index = (p2Index - 1 + characterManager.getRosterSize()) % characterManager.getRosterSize();
-            }
+            if (selectingP1) p1Index = (p1Index - 1 + characterManager.getRosterSize()) % characterManager.getRosterSize();
+            else             p2Index = (p2Index - 1 + characterManager.getRosterSize()) % characterManager.getRosterSize();
             gamePanel.repaint();
+
         } else if (rightArrow != null && rightArrow.contains(mx, my)) {
-            if (selectingP1) {
-                p1Index = (p1Index + 1) % characterManager.getRosterSize();
-            } else {
-                p2Index = (p2Index + 1) % characterManager.getRosterSize();
-            }
+            if (selectingP1) p1Index = (p1Index + 1) % characterManager.getRosterSize();
+            else             p2Index = (p2Index + 1) % characterManager.getRosterSize();
             gamePanel.repaint();
+
         } else if (selectBtn != null && selectBtn.contains(mx, my)) {
             if (isPvp) {
-                if (selectingP1) {
-                    selectingP1 = false;
-                    gamePanel.repaint();
-                } else {
-                    gamePanel.startPvpBattle(p1Index, p2Index);
-                }
-            } else if (mode.equals("PVAI")) {
+                if (selectingP1) { selectingP1 = false; gamePanel.repaint(); }
+                else             { gamePanel.startPvpBattle(p1Index, p2Index); }
+            } else if (gamePanel.getGameMode().equals("PVAI")) {
                 gamePanel.startPvAiBattle(p1Index);
-            } else if (mode.equals("ARCADE")) {
+            } else if (gamePanel.getGameMode().equals("ARCADE")) {
                 gamePanel.startArcade(p1Index);
             }
+
         } else if (returnBtn != null && returnBtn.contains(mx, my)) {
-            if (!selectingP1 && isPvp) {
-                selectingP1 = true;
-                gamePanel.repaint();
-            } else {
-                reset();
-                gamePanel.setGameState(GameState.MENU);
-            }
+            if (!selectingP1 && isPvp) { selectingP1 = true; gamePanel.repaint(); }
+            else                       { reset(); gamePanel.setGameState(GameState.MENU); }
         }
     }
 
-    public void mouseMoved(int mouseX, int mouseY) {
-        gamePanel.repaint();
+    public void mouseMoved(int mx, int my) {
+        int prev = hoveredIndex;
+        hoveredIndex = -1;
+        if      (leftArrow  != null && leftArrow.contains(mx, my))  hoveredIndex = 0;
+        else if (rightArrow != null && rightArrow.contains(mx, my)) hoveredIndex = 1;
+        else if (selectBtn  != null && selectBtn.contains(mx, my))  hoveredIndex = 2;
+        else if (returnBtn  != null && returnBtn.contains(mx, my))  hoveredIndex = 3;
+        if (hoveredIndex != prev) gamePanel.repaint();
     }
 }
