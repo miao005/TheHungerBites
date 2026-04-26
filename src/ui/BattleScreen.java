@@ -3,6 +3,7 @@ package ui;
 import main.BattleSystem;
 import main.Character;
 import main.GamePanel;
+import main.MatchManager;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -36,6 +37,12 @@ import java.util.Map;
  *            Red=Basic  Green=Skill  Yellow=Ultimate  Blue=Rest
  */
 public class BattleScreen {
+
+    // ── Round starter indicator ───────────────────────────────────────────
+    private boolean showRoundStart  = false;
+    private long    roundStartTime  = 0;
+    private int     currentRound    = 1;
+    private static final long ROUND_INDICATOR_MS = 2000; // how long it stays visible
 
     private GamePanel gamePanel;
     private BattleSystem battleSystem;
@@ -88,6 +95,101 @@ public class BattleScreen {
         loadFont();
         loadAssets();
         setupAnimationLabels();
+    }
+
+    public void triggerRoundStart(int round) {
+        this.currentRound   = round;
+        this.showRoundStart = true;
+        this.roundStartTime = System.currentTimeMillis();
+        this.waitingForInput = false; // block input until indicator finishes
+    }
+
+    private void drawRoundStartIndicator(Graphics2D g2d, int width, int height) {
+        if (!showRoundStart) return;
+
+        long elapsed = System.currentTimeMillis() - roundStartTime;
+
+        // Done — re-enable input
+        if (elapsed >= ROUND_INDICATOR_MS) {
+            showRoundStart   = false;
+            waitingForInput  = true;
+            gamePanel.repaint();
+            return;
+        }
+
+        // Fade in for first 300ms, hold, fade out last 400ms
+        float alpha;
+        if (elapsed < 300) {
+            alpha = elapsed / 300f;
+        } else if (elapsed > ROUND_INDICATOR_MS - 400) {
+            alpha = (ROUND_INDICATOR_MS - elapsed) / 400f;
+        } else {
+            alpha = 1f;
+        }
+        alpha = Math.max(0f, Math.min(1f, alpha));
+
+        // Scale: pop in from 1.4x → 1.0x in first 400ms
+        float scale = elapsed < 400
+                ? 1f + (1f - elapsed / 400f) * 0.4f
+                : 1f;
+
+        g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha * 0.55f));
+        g2d.setColor(Color.BLACK);
+        g2d.fillRect(0, 0, width, height);
+        g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha));
+
+        int cx = width  / 2;
+        int cy = height / 2;
+
+        java.awt.geom.AffineTransform old = g2d.getTransform();
+        g2d.translate(cx, cy);
+        g2d.scale(scale, scale);
+        g2d.translate(-cx, -cy);
+
+        // "ROUND X" line
+        Font roundFont = pixelFont.deriveFont((float) sf(width, 32));
+        g2d.setFont(roundFont);
+        FontMetrics rfm = g2d.getFontMetrics();
+        String roundText = "ROUND  " + currentRound;
+        int rx = cx - rfm.stringWidth(roundText) / 2;
+        int ry = cy - (int)(height * 0.04);
+
+        // Gold outline
+        g2d.setColor(new Color(0, 0, 0, 180));
+        g2d.drawString(roundText, rx + 3, ry + 3);
+        g2d.setColor(new Color(255, 215, 0));
+        g2d.drawString(roundText, rx, ry);
+
+        // Divider line
+        int lineY = ry + (int)(height * 0.025);
+        g2d.setColor(new Color(255, 215, 0, 180));
+        g2d.setStroke(new BasicStroke(3));
+        g2d.drawLine(cx - rfm.stringWidth(roundText)/2, lineY,
+                cx + rfm.stringWidth(roundText)/2, lineY);
+        g2d.setStroke(new BasicStroke(1));
+
+        // "FIGHT!" line
+        Font fightFont = pixelFont.deriveFont((float) sf(width, 22));
+        g2d.setFont(fightFont);
+        FontMetrics ffm = g2d.getFontMetrics();
+        String fightText = elapsed > 600 ? "FIGHT!" : "";
+        if (!fightText.isEmpty()) {
+            float fightAlpha = Math.min(1f, (elapsed - 600) / 200f);
+            g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER,
+                    Math.min(alpha, fightAlpha)));
+            int fx = cx - ffm.stringWidth(fightText) / 2;
+            int fy = ry + (int)(height * 0.08);
+            g2d.setColor(new Color(0, 0, 0, 180));
+            g2d.drawString(fightText, fx + 2, fy + 2);
+            g2d.setColor(new Color(255, 80, 80));
+            g2d.drawString(fightText, fx, fy);
+            g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha));
+        }
+
+        g2d.setTransform(old);
+        g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1f));
+
+        gamePanel.repaint(); // keep animating
     }
 
     // ── Asset loading ─────────────────────────────────────────────────
@@ -226,6 +328,8 @@ public class BattleScreen {
 
         // 6. Flash
         drawFlash(g2d, width, height);
+
+        drawRoundStartIndicator(g2d, width, height);
     }
 
     // ── Battle background ─────────────────────────────────────────────
@@ -326,29 +430,98 @@ public class BattleScreen {
         g2d.drawLine(0, hpBarH, width, hpBarH);
         g2d.setStroke(new BasicStroke(1));
 
-        int portraitSize = (int)(hpBarH * 0.75);
+        // Portrait smaller so it never overlaps the centre pip zone
+        int portraitSize = (int)(hpBarH * 0.62);
         int padY         = (hpBarH - portraitSize) / 2;
         int barH         = (int)(portraitSize * 0.28);
-        int barW         = (int)(width * 0.33);
 
-        // P1 left
-        drawPortrait(g2d, player1, (int)(width*0.01), padY, portraitSize, false);
-        int p1BarX = (int)(width*0.01) + portraitSize + (int)(width*0.01);
+        // Reserve a fixed-width zone in the centre for the round/pip display
+        int centreZone   = (int)(width * 0.18); // 18% of screen width
+        int centreLeft   = width / 2 - centreZone / 2;
+        int centreRight  = width / 2 + centreZone / 2;
+
+        // P1: portrait on the far left, bar fills from portrait to centreLeft
+        int pad          = (int)(width * 0.01);
+        int p1PortX      = pad;
+        int p1BarX       = p1PortX + portraitSize + pad;
+        int p1BarW       = centreLeft - p1BarX - pad;
+        drawPortrait(g2d, player1, p1PortX, padY, portraitSize, false);
         drawHpBarBlock(g2d, player1, p1BarX,
                 padY + (int)(portraitSize*0.25),
                 padY + (int)(portraitSize*0.45),
                 padY + (int)(portraitSize*0.72),
-                barW, barH, width);
+                p1BarW, barH, width);
 
-        // P2 right
-        int p2BarX  = (int)(width*0.52);
-        int p2PortX = p2BarX + barW + (int)(width*0.01);
+        // P2: bar fills from centreRight to portrait, portrait on the far right
+        int p2PortX      = width - pad - portraitSize;
+        int p2BarW       = p2PortX - pad - centreRight - pad;
+        int p2BarX       = centreRight + pad;
         drawPortrait(g2d, player2, p2PortX, padY, portraitSize, true);
         drawHpBarBlock(g2d, player2, p2BarX,
                 padY + (int)(portraitSize*0.25),
                 padY + (int)(portraitSize*0.45),
                 padY + (int)(portraitSize*0.72),
-                barW, barH, width);
+                p2BarW, barH, width);
+
+        // Win-pip score (centre of HP bar strip)
+        drawWinPips(g2d, width, hpBarH);
+    }
+
+    /**
+     * Draws best-of-3 win indicators in the centre of the HP bar area.
+     * P1 pips grow leftward from centre, P2 pips grow rightward.
+     * Filled circle = win earned, hollow = not yet won.
+     */
+    private void drawWinPips(Graphics2D g2d, int width, int hpH) {
+        MatchManager mm = gamePanel.getMatchManager();
+        int p1Wins = mm.getP1Wins();
+        int p2Wins = mm.getP2Wins();
+        int needed = MatchManager.ROUNDS_TO_WIN; // 2
+
+        int pipR    = Math.max(4, (int)(hpH * 0.09));
+        int pipDiam = pipR * 2;
+        int gap     = (int)(pipR * 0.9);
+        int cx      = width / 2;
+        int cy      = hpH / 2;
+
+        // Round label above pips
+        int dispRound = mm.getCurrentRoundNumber() + 1; // rounds completed + 1 = current
+        if (dispRound > MatchManager.MAX_ROUNDS) dispRound = MatchManager.MAX_ROUNDS;
+
+        g2d.setFont(pixelFont.deriveFont((float) sf(width, 7)));
+        FontMetrics fm = g2d.getFontMetrics();
+        g2d.setColor(new Color(255, 215, 0, 200));
+
+
+        // P1 pips: left of centre
+        for (int i = 0; i < needed; i++) {
+            int px = cx - gap - pipDiam - i * (pipDiam + gap);
+            int py = cy - pipR + (int)(hpH * 0.04);
+            if (i < p1Wins) {
+                g2d.setColor(new Color(80, 220, 80));
+                g2d.fillOval(px, py, pipDiam, pipDiam);
+            } else {
+                g2d.setColor(new Color(80, 220, 80, 80));
+                g2d.setStroke(new BasicStroke(1.5f));
+                g2d.drawOval(px, py, pipDiam, pipDiam);
+                g2d.setStroke(new BasicStroke(1));
+            }
+        }
+
+        // P2 pips: right of centre
+        for (int i = 0; i < needed; i++) {
+            int px = cx + gap + i * (pipDiam + gap);
+            int py = cy - pipR + (int)(hpH * 0.04);
+            if (i < p2Wins) {
+                g2d.setColor(new Color(220, 80, 80));
+                g2d.fillOval(px, py, pipDiam, pipDiam);
+            } else {
+                g2d.setColor(new Color(220, 80, 80, 80));
+                g2d.setStroke(new BasicStroke(1.5f));
+                g2d.drawOval(px, py, pipDiam, pipDiam);
+                g2d.setStroke(new BasicStroke(1));
+            }
+        }
     }
 
     private void drawPortrait(Graphics2D g2d, Character ch,
@@ -704,13 +877,12 @@ public class BattleScreen {
 
             new Thread(() -> {
                 try { Thread.sleep(2400); } catch (InterruptedException ignored) {}
-                if (isArcadeMode && player1.isAlive())
-                    gamePanel.onArcadeRoundWon(arcadeRound, arcadeMaxRounds);
-                else
-                    gamePanel.goToGameOver(
-                            battleSystem.getWinner(player1, player2),
-                            battleSystem.getWinner(player1, player2) == player1 ? player2 : player1,
-                            isArcadeMode, arcadeRound);
+                // Always delegate to GamePanel — it consults MatchManager to decide
+                // whether this ends the match or just the round.
+                Character roundWinner = battleSystem.getWinner(player1, player2);
+                Character roundLoser  = roundWinner == player1 ? player2 : player1;
+                SwingUtilities.invokeLater(() ->
+                        gamePanel.onRoundOver(roundWinner, roundLoser));
             }).start();
             return;
         }
