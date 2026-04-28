@@ -112,16 +112,19 @@ public class MenuScreen {
         System.out.println("Click at: (" + mouseX + ", " + mouseY + ")");
 
         if (pvpBounds.contains(mouseX, mouseY)) {
+            gamePanel.getAudioManager().playSFX("/resources/Music/click.wav");
             gamePanel.setGameMode("PVP");
             gamePanel.getCharacterSelectScreen().reset();
             gamePanel.setGameState(GameState.CHARACTER_SELECT);
             System.out.println("Selected: PVP Mode");
         } else if (pvAiBounds.contains(mouseX, mouseY)) {
+            gamePanel.getAudioManager().playSFX("/resources/Music/click.wav");
             gamePanel.setGameMode("PVAI");
             gamePanel.getCharacterSelectScreen().reset();
             gamePanel.setGameState(GameState.CHARACTER_SELECT);
             System.out.println("Selected: P V AI Mode");
         } else if (arcadeBounds.contains(mouseX, mouseY)) {
+            gamePanel.getAudioManager().playSFX("/resources/Music/click.wav");
             gamePanel.setGameMode("ARCADE");
             gamePanel.getCharacterSelectScreen().reset();
             gamePanel.setGameState(GameState.CHARACTER_SELECT);

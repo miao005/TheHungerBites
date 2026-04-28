@@ -91,6 +91,7 @@ public class ArcadeRewardScreen {
         else if (btn4 != null && btn4.contains(mx, my)) choice = 4;
 
         if (choice != -1) {
+            gamePanel.getAudioManager().playSFX("/resources/Music/click.wav");
             applyReward(choice);
             gamePanel.continueArcade();
         }

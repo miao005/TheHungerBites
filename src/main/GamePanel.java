@@ -65,6 +65,7 @@ public class GamePanel extends JPanel {
         gameOverScreen        = new GameOverScreen(this);
         roundCutscene         = new RoundCutscene(this);
 
+        setGameState(GameState.START); // triggers music on launch
     }
 
     // ═════════════════════════════════════════════════════════════════
@@ -243,9 +244,19 @@ public class GamePanel extends JPanel {
         this.gameState = gameState;
         switch(gameState) {
 
+            case START:
+                if (!audioManager.isPlaying()) {
+                    audioManager.playMusic("/resources/Music/menu_music.wav");
+                }
+                break;
+            case CHARACTER_SELECT:
+                // menu music keeps playing
+                break;
             case MENU:
-                audioManager.stopMusic();
-                audioManager.playMusic("/resources/Music/menu_music.wav");
+                if (this.gameState == GameState.GAME_OVER || !audioManager.isPlaying()) {
+                    audioManager.stopMusic();
+                    audioManager.playMusic("/resources/Music/menu_music.wav");
+                }
                 break;
             case BATTLE:
                 audioManager.stopMusic();
@@ -277,6 +288,7 @@ public class GamePanel extends JPanel {
     public BattleScreen getBattleScreen()                   { return battleScreen; }
     public ArcadeRewardScreen getArcadeRewardScreen()       { return arcadeRewardScreen; }
     public GameOverScreen getGameOverScreen()               { return gameOverScreen; }
+    public AudioManager getAudioManager()                    { return audioManager; }
 
     // ═════════════════════════════════════════════════════════════════
     //  Rendering

@@ -352,16 +352,19 @@ public class CharacterSelectScreen {
         boolean isPvp = gamePanel.getGameMode().equals("PVP");
 
         if (leftArrow != null && leftArrow.contains(mx, my)) {
+            gamePanel.getAudioManager().playSFX("/resources/Music/click.wav");
             if (selectingP1) p1Index = (p1Index - 1 + characterManager.getRosterSize()) % characterManager.getRosterSize();
             else             p2Index = (p2Index - 1 + characterManager.getRosterSize()) % characterManager.getRosterSize();
             gamePanel.repaint();
 
         } else if (rightArrow != null && rightArrow.contains(mx, my)) {
+            gamePanel.getAudioManager().playSFX("/resources/Music/click.wav");
             if (selectingP1) p1Index = (p1Index + 1) % characterManager.getRosterSize();
             else             p2Index = (p2Index + 1) % characterManager.getRosterSize();
             gamePanel.repaint();
 
         } else if (selectBtn != null && selectBtn.contains(mx, my)) {
+            gamePanel.getAudioManager().playSFX("/resources/Music/click.wav");
             if (isPvp) {
                 if (selectingP1) { selectingP1 = false; gamePanel.repaint(); }
                 else             { gamePanel.startPvpBattle(p1Index, p2Index); }
@@ -372,6 +375,7 @@ public class CharacterSelectScreen {
             }
 
         } else if (returnBtn != null && returnBtn.contains(mx, my)) {
+            gamePanel.getAudioManager().playSFX("/resources/Music/click.wav");
             if (!selectingP1 && isPvp) { selectingP1 = true; gamePanel.repaint(); }
             else                       { reset(); gamePanel.setGameState(GameState.MENU); }
         }

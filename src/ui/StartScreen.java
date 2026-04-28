@@ -68,6 +68,7 @@ public class StartScreen {
         if (repaintTimer != null) {
             repaintTimer.stop();  // Stop timer when leaving start screen
         }
+        gamePanel.getAudioManager().playSFX("/resources/Music/click.wav");
         gamePanel.setGameState(GameState.MENU);
     }
 }

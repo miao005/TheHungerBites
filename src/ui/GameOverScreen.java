@@ -118,9 +118,11 @@ public class GameOverScreen {
 
     public void mouseClicked(int mx, int my) {
         if (btnPlayAgain != null && btnPlayAgain.contains(mx, my)) {
+            gamePanel.getAudioManager().playSFX("/resources/Music/click.wav");
             gamePanel.setGameState(GameState.CHARACTER_SELECT);
             gamePanel.getCharacterSelectScreen().reset();
         } else if (btnMenu != null && btnMenu.contains(mx, my)) {
+            gamePanel.getAudioManager().playSFX("/resources/Music/click.wav");
             gamePanel.setGameState(GameState.MENU);
         }
     }
