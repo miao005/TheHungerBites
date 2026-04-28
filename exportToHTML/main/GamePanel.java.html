@@ -1,0 +1,341 @@
+<html>
+<head>
+<title>GamePanel.java</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #cf8e6d;}
+.s1 { color: #bcbec4;}
+.s2 { color: #bcbec4;}
+.s3 { color: #7a7e85;}
+.s4 { color: #2aacb8;}
+.s5 { color: #6aab73;}
+.s6 { color: #5f826b; font-style: italic;}
+.s7 { color: #67a37c; font-style: italic;}
+</style>
+</head>
+<body bgcolor="#191a1c">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+GamePanel.java</font>
+</center></td></tr></table>
+<pre><span class="s0">package </span><span class="s1">main</span><span class="s2">;</span>
+
+<span class="s0">import </span><span class="s1">inputs</span><span class="s2">.</span><span class="s1">MouseInputs</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s1">ui</span><span class="s2">.*;</span>
+
+<span class="s0">import </span><span class="s1">javax</span><span class="s2">.</span><span class="s1">swing</span><span class="s2">.</span><span class="s1">JPanel</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s1">java</span><span class="s2">.</span><span class="s1">awt</span><span class="s2">.*;</span>
+
+<span class="s0">public class </span><span class="s1">GamePanel </span><span class="s0">extends </span><span class="s1">JPanel </span><span class="s2">{</span>
+    <span class="s3">// Fixed resolution for pixel art - 640x360</span>
+    <span class="s0">public static final int </span><span class="s1">WIDTH  </span><span class="s2">= </span><span class="s4">640</span><span class="s2">;</span>
+    <span class="s0">public static final int </span><span class="s1">HEIGHT </span><span class="s2">= </span><span class="s4">360</span><span class="s2">;</span>
+
+    <span class="s0">private </span><span class="s1">MouseInputs mouseInputs</span><span class="s2">;</span>
+    <span class="s0">private </span><span class="s1">GameState gameState </span><span class="s2">= </span><span class="s1">GameState</span><span class="s2">.</span><span class="s1">START</span><span class="s2">;</span>
+    <span class="s0">private </span><span class="s1">String gameMode </span><span class="s2">= </span><span class="s5">&quot;PVP&quot;</span><span class="s2">;</span>
+    <span class="s0">private </span><span class="s1">String selectedCharacter </span><span class="s2">= </span><span class="s5">&quot;&quot;</span><span class="s2">;</span>
+
+    <span class="s3">// Managers</span>
+    <span class="s0">private </span><span class="s1">CharacterManager characterManager</span><span class="s2">;</span>
+    <span class="s0">private </span><span class="s1">BattleSystem battleSystem</span><span class="s2">;</span>
+
+    <span class="s6">/**</span>
+     <span class="s6">* MatchManager owns all best-of-3 state for the CURRENT match</span>
+     <span class="s6">* (PVP, PvAI, or one Arcade bout against a single opponent).</span>
+     <span class="s6">*/</span>
+    <span class="s0">private </span><span class="s1">MatchManager matchManager</span><span class="s2">;</span>
+    <span class="s0">private </span><span class="s1">AudioManager audioManager</span><span class="s2">;</span>
+
+    <span class="s3">// Screens</span>
+    <span class="s0">private </span><span class="s1">StartScreen startScreen</span><span class="s2">;</span>
+    <span class="s0">private </span><span class="s1">MenuScreen menuScreen</span><span class="s2">;</span>
+    <span class="s0">private </span><span class="s1">CharacterSelectScreen characterSelectScreen</span><span class="s2">;</span>
+    <span class="s0">private </span><span class="s1">BattleScreen battleScreen</span><span class="s2">;</span>
+    <span class="s0">private </span><span class="s1">ArcadeRewardScreen arcadeRewardScreen</span><span class="s2">;</span>
+    <span class="s0">private </span><span class="s1">GameOverScreen gameOverScreen</span><span class="s2">;</span>
+    <span class="s0">private </span><span class="s1">RoundCutscene roundCutscene</span><span class="s2">;</span>
+
+    <span class="s3">// ── Arcade series state ───────────────────────────────────────────</span>
+    <span class="s3">// Arcade = multiple opponents, each fought in a best-of-3 match.</span>
+    <span class="s0">private </span><span class="s1">Character arcadePlayer</span><span class="s2">;</span>
+    <span class="s0">private int</span><span class="s2">[] </span><span class="s1">arcadeOpponentIndices</span><span class="s2">;</span>
+    <span class="s0">private int </span><span class="s1">arcadeCurrentOpponent </span><span class="s2">= </span><span class="s4">0</span><span class="s2">;   </span><span class="s3">// which opponent (0-based) we are on</span>
+    <span class="s0">private int </span><span class="s1">arcadePlayerIndex </span><span class="s2">= </span><span class="s4">0</span><span class="s2">;</span>
+    <span class="s0">private static final int </span><span class="s1">ARCADE_OPPONENTS </span><span class="s2">= </span><span class="s4">5</span><span class="s2">; </span><span class="s3">// total opponents in arcade run</span>
+
+    <span class="s0">public </span><span class="s1">GamePanel</span><span class="s2">() {</span>
+        <span class="s0">this</span><span class="s2">.</span><span class="s1">setPreferredSize</span><span class="s2">(</span><span class="s0">new </span><span class="s1">Dimension</span><span class="s2">(</span><span class="s1">WIDTH</span><span class="s2">, </span><span class="s1">HEIGHT</span><span class="s2">));</span>
+        <span class="s0">this</span><span class="s2">.</span><span class="s1">setMinimumSize</span><span class="s2">(</span><span class="s0">new </span><span class="s1">Dimension</span><span class="s2">(</span><span class="s1">WIDTH</span><span class="s2">, </span><span class="s1">HEIGHT</span><span class="s2">));</span>
+
+        <span class="s1">characterManager </span><span class="s2">= </span><span class="s0">new </span><span class="s1">CharacterManager</span><span class="s2">();</span>
+        <span class="s1">battleSystem     </span><span class="s2">= </span><span class="s0">new </span><span class="s1">BattleSystem</span><span class="s2">();</span>
+        <span class="s1">matchManager     </span><span class="s2">= </span><span class="s0">new </span><span class="s1">MatchManager</span><span class="s2">();</span>
+        <span class="s1">audioManager </span><span class="s2">= </span><span class="s0">new </span><span class="s1">AudioManager</span><span class="s2">();</span>
+
+        <span class="s1">mouseInputs </span><span class="s2">= </span><span class="s0">new </span><span class="s1">MouseInputs</span><span class="s2">(</span><span class="s0">this</span><span class="s2">);</span>
+        <span class="s1">addMouseListener</span><span class="s2">(</span><span class="s1">mouseInputs</span><span class="s2">);</span>
+        <span class="s1">addMouseMotionListener</span><span class="s2">(</span><span class="s1">mouseInputs</span><span class="s2">);</span>
+
+        <span class="s1">startScreen           </span><span class="s2">= </span><span class="s0">new </span><span class="s1">StartScreen</span><span class="s2">(</span><span class="s0">this</span><span class="s2">);</span>
+        <span class="s1">menuScreen            </span><span class="s2">= </span><span class="s0">new </span><span class="s1">MenuScreen</span><span class="s2">(</span><span class="s0">this</span><span class="s2">);</span>
+        <span class="s1">characterSelectScreen </span><span class="s2">= </span><span class="s0">new </span><span class="s1">CharacterSelectScreen</span><span class="s2">(</span><span class="s0">this</span><span class="s2">, </span><span class="s1">characterManager</span><span class="s2">);</span>
+        <span class="s1">battleScreen          </span><span class="s2">= </span><span class="s0">new </span><span class="s1">BattleScreen</span><span class="s2">(</span><span class="s0">this</span><span class="s2">);</span>
+        <span class="s1">arcadeRewardScreen    </span><span class="s2">= </span><span class="s0">new </span><span class="s1">ArcadeRewardScreen</span><span class="s2">(</span><span class="s0">this</span><span class="s2">);</span>
+        <span class="s1">gameOverScreen        </span><span class="s2">= </span><span class="s0">new </span><span class="s1">GameOverScreen</span><span class="s2">(</span><span class="s0">this</span><span class="s2">);</span>
+        <span class="s1">roundCutscene         </span><span class="s2">= </span><span class="s0">new </span><span class="s1">RoundCutscene</span><span class="s2">(</span><span class="s0">this</span><span class="s2">);</span>
+
+    <span class="s2">}</span>
+
+    <span class="s3">// ═════════════════════════════════════════════════════════════════</span>
+    <span class="s3">//  Game-flow entry points (called by screens / menus)</span>
+    <span class="s3">// ═════════════════════════════════════════════════════════════════</span>
+
+    <span class="s6">/** Start a fresh PVP best-of-3 match. */</span>
+    <span class="s0">public void </span><span class="s1">startPvpBattle</span><span class="s2">(</span><span class="s0">int </span><span class="s1">p1Index</span><span class="s2">, </span><span class="s0">int </span><span class="s1">p2Index</span><span class="s2">) {</span>
+        <span class="s1">Character p1 </span><span class="s2">= </span><span class="s1">characterManager</span><span class="s2">.</span><span class="s1">createCharacter</span><span class="s2">(</span><span class="s1">p1Index</span><span class="s2">);</span>
+        <span class="s1">Character p2 </span><span class="s2">= </span><span class="s1">characterManager</span><span class="s2">.</span><span class="s1">createCharacter</span><span class="s2">(</span><span class="s1">p2Index</span><span class="s2">);</span>
+        <span class="s1">p1</span><span class="s2">.</span><span class="s1">setName</span><span class="s2">(</span><span class="s5">&quot;P1 &quot; </span><span class="s2">+ </span><span class="s1">p1</span><span class="s2">.</span><span class="s1">getName</span><span class="s2">());</span>
+        <span class="s1">p2</span><span class="s2">.</span><span class="s1">setName</span><span class="s2">(</span><span class="s5">&quot;P2 &quot; </span><span class="s2">+ </span><span class="s1">p2</span><span class="s2">.</span><span class="s1">getName</span><span class="s2">());</span>
+        <span class="s1">p1</span><span class="s2">.</span><span class="s1">setPlayer</span><span class="s2">(</span><span class="s0">true</span><span class="s2">);</span>
+        <span class="s1">p2</span><span class="s2">.</span><span class="s1">setPlayer</span><span class="s2">(</span><span class="s0">false</span><span class="s2">);</span>
+
+        <span class="s1">matchManager</span><span class="s2">.</span><span class="s1">startMatch</span><span class="s2">(</span><span class="s1">p1</span><span class="s2">, </span><span class="s1">p2</span><span class="s2">, </span><span class="s0">false</span><span class="s2">, </span><span class="s0">false</span><span class="s2">);</span>
+        <span class="s1">launchRound</span><span class="s2">(); </span><span class="s3">// starts round 1</span>
+    <span class="s2">}</span>
+
+    <span class="s6">/** Start a fresh PvAI best-of-3 match. */</span>
+    <span class="s0">public void </span><span class="s1">startPvAiBattle</span><span class="s2">(</span><span class="s0">int </span><span class="s1">playerIndex</span><span class="s2">) {</span>
+        <span class="s1">Character p1 </span><span class="s2">= </span><span class="s1">characterManager</span><span class="s2">.</span><span class="s1">createCharacter</span><span class="s2">(</span><span class="s1">playerIndex</span><span class="s2">);</span>
+        <span class="s1">Character ai </span><span class="s2">= </span><span class="s1">characterManager</span><span class="s2">.</span><span class="s1">getRandomCharacter</span><span class="s2">(</span><span class="s1">playerIndex</span><span class="s2">);</span>
+        <span class="s1">p1</span><span class="s2">.</span><span class="s1">setPlayer</span><span class="s2">(</span><span class="s0">true</span><span class="s2">);</span>
+        <span class="s1">ai</span><span class="s2">.</span><span class="s1">setPlayer</span><span class="s2">(</span><span class="s0">false</span><span class="s2">);</span>
+        <span class="s1">ai</span><span class="s2">.</span><span class="s1">setName</span><span class="s2">(</span><span class="s1">characterManager</span><span class="s2">.</span><span class="s1">getAiName</span><span class="s2">(</span><span class="s1">ai</span><span class="s2">.</span><span class="s1">getName</span><span class="s2">()));</span>
+
+        <span class="s1">matchManager</span><span class="s2">.</span><span class="s1">startMatch</span><span class="s2">(</span><span class="s1">p1</span><span class="s2">, </span><span class="s1">ai</span><span class="s2">, </span><span class="s0">true</span><span class="s2">, </span><span class="s0">false</span><span class="s2">);</span>
+        <span class="s1">launchRound</span><span class="s2">(); </span><span class="s3">// starts round 1</span>
+    <span class="s2">}</span>
+
+    <span class="s6">/** Start an Arcade run (5 opponents, each a best-of-3). */</span>
+    <span class="s0">public void </span><span class="s1">startArcade</span><span class="s2">(</span><span class="s0">int </span><span class="s1">playerIndex</span><span class="s2">) {</span>
+        <span class="s1">arcadePlayerIndex     </span><span class="s2">= </span><span class="s1">playerIndex</span><span class="s2">;</span>
+        <span class="s1">arcadePlayer          </span><span class="s2">= </span><span class="s1">characterManager</span><span class="s2">.</span><span class="s1">createCharacter</span><span class="s2">(</span><span class="s1">playerIndex</span><span class="s2">);</span>
+        <span class="s1">arcadePlayer</span><span class="s2">.</span><span class="s1">setPlayer</span><span class="s2">(</span><span class="s0">true</span><span class="s2">);</span>
+        <span class="s1">arcadeOpponentIndices </span><span class="s2">= </span><span class="s1">characterManager</span><span class="s2">.</span><span class="s1">getArcadeOpponentIndices</span><span class="s2">(</span><span class="s1">playerIndex</span><span class="s2">);</span>
+        <span class="s1">arcadeCurrentOpponent </span><span class="s2">= </span><span class="s4">0</span><span class="s2">;</span>
+        <span class="s1">launchNextArcadeOpponent</span><span class="s2">();</span>
+    <span class="s2">}</span>
+
+    <span class="s3">// ═════════════════════════════════════════════════════════════════</span>
+    <span class="s3">//  Internal round / match progression</span>
+    <span class="s3">// ═════════════════════════════════════════════════════════════════</span>
+
+    <span class="s6">/**</span>
+     <span class="s6">* Launches the next round of the current match.</span>
+     <span class="s6">* Uses matchManager to determine which round number to display,</span>
+     <span class="s6">* resets characters (HP/Mana) for rounds 2+, and fires the cutscene.</span>
+     <span class="s6">*/</span>
+    <span class="s0">private void </span><span class="s1">launchRound</span><span class="s2">() {</span>
+        <span class="s0">int </span><span class="s1">roundNumber </span><span class="s2">= </span><span class="s1">matchManager</span><span class="s2">.</span><span class="s1">getNextRoundNumber</span><span class="s2">(); </span><span class="s3">// 1, 2, or 3</span>
+
+        <span class="s3">// Reset HP/Mana for round 2 and 3 (round 1 already starts fresh)</span>
+        <span class="s0">if </span><span class="s2">(</span><span class="s1">roundNumber </span><span class="s2">&gt; </span><span class="s4">1</span><span class="s2">) {</span>
+            <span class="s1">matchManager</span><span class="s2">.</span><span class="s1">resetCharactersForNextRound</span><span class="s2">();</span>
+        <span class="s2">}</span>
+
+        <span class="s1">Character p1 </span><span class="s2">= </span><span class="s1">matchManager</span><span class="s2">.</span><span class="s1">getPlayer1</span><span class="s2">();</span>
+        <span class="s1">Character p2 </span><span class="s2">= </span><span class="s1">matchManager</span><span class="s2">.</span><span class="s1">getPlayer2</span><span class="s2">();</span>
+
+        <span class="s3">// Cutscene shows &quot;ROUND X&quot;</span>
+        <span class="s1">roundCutscene</span><span class="s2">.</span><span class="s1">setup</span><span class="s2">(</span><span class="s1">p1</span><span class="s2">, </span><span class="s1">p2</span><span class="s2">, </span><span class="s1">roundNumber</span><span class="s2">);</span>
+
+        <span class="s3">// Tell BattleScreen to start</span>
+        <span class="s1">battleScreen</span><span class="s2">.</span><span class="s1">startBattle</span><span class="s2">(</span>
+                <span class="s1">p1</span><span class="s2">, </span><span class="s1">p2</span><span class="s2">,</span>
+                <span class="s1">matchManager</span><span class="s2">.</span><span class="s1">isAiMode</span><span class="s2">(),</span>
+                <span class="s1">matchManager</span><span class="s2">.</span><span class="s1">isArcadeMode</span><span class="s2">(),</span>
+                <span class="s1">roundNumber</span><span class="s2">,</span>
+                <span class="s1">MatchManager</span><span class="s2">.</span><span class="s1">MAX_ROUNDS</span>
+        <span class="s2">);</span>
+        <span class="s1">battleScreen</span><span class="s2">.</span><span class="s1">triggerRoundStart</span><span class="s2">(</span><span class="s1">roundNumber</span><span class="s2">);</span>
+
+        <span class="s1">setGameState</span><span class="s2">(</span><span class="s1">GameState</span><span class="s2">.</span><span class="s1">CUTSCENE</span><span class="s2">);</span>
+        <span class="s1">setGameState</span><span class="s2">(</span><span class="s1">GameState</span><span class="s2">.</span><span class="s1">BATTLE</span><span class="s2">);</span>
+    <span class="s2">}</span>
+
+    <span class="s6">/**</span>
+     <span class="s6">* Called by BattleScreen when a single round finishes.</span>
+     <span class="s6">* Routes to: next round, arcade reward screen, or game-over.</span>
+     <span class="s6">*</span>
+     <span class="s6">* </span><span class="s7">@param </span><span class="s6">roundWinner the Character who won this round (null = draw)</span>
+     <span class="s6">* </span><span class="s7">@param </span><span class="s6">roundLoser  the other Character</span>
+     <span class="s6">*/</span>
+    <span class="s0">public void </span><span class="s1">onRoundOver</span><span class="s2">(</span><span class="s1">Character roundWinner</span><span class="s2">, </span><span class="s1">Character roundLoser</span><span class="s2">) {</span>
+        <span class="s0">boolean </span><span class="s1">matchDone </span><span class="s2">= </span><span class="s1">matchManager</span><span class="s2">.</span><span class="s1">recordRoundResult</span><span class="s2">(</span><span class="s1">roundWinner</span><span class="s2">);</span>
+
+        <span class="s0">if </span><span class="s2">(</span><span class="s1">matchDone</span><span class="s2">) {</span>
+            <span class="s1">Character matchWinner </span><span class="s2">= </span><span class="s1">matchManager</span><span class="s2">.</span><span class="s1">getMatchWinner</span><span class="s2">();</span>
+            <span class="s1">Character matchLoser  </span><span class="s2">= (</span><span class="s1">matchWinner </span><span class="s2">== </span><span class="s1">matchManager</span><span class="s2">.</span><span class="s1">getPlayer1</span><span class="s2">())</span>
+                    <span class="s2">? </span><span class="s1">matchManager</span><span class="s2">.</span><span class="s1">getPlayer2</span><span class="s2">()</span>
+                    <span class="s2">: </span><span class="s1">matchManager</span><span class="s2">.</span><span class="s1">getPlayer1</span><span class="s2">();</span>
+
+            <span class="s0">if </span><span class="s2">(</span><span class="s1">matchManager</span><span class="s2">.</span><span class="s1">isArcadeMode</span><span class="s2">()) {</span>
+                <span class="s0">if </span><span class="s2">(</span><span class="s1">matchWinner </span><span class="s2">== </span><span class="s1">matchManager</span><span class="s2">.</span><span class="s1">getPlayer1</span><span class="s2">()) {</span>
+                    <span class="s3">// Player won this arcade bout</span>
+                    <span class="s1">onArcadeBoutWon</span><span class="s2">();</span>
+                <span class="s2">} </span><span class="s0">else </span><span class="s2">{</span>
+                    <span class="s3">// Player lost this arcade bout → game over</span>
+                    <span class="s1">goToGameOver</span><span class="s2">(</span><span class="s1">matchWinner</span><span class="s2">, </span><span class="s1">matchLoser</span><span class="s2">, </span><span class="s0">true</span><span class="s2">, </span><span class="s1">arcadeCurrentOpponent</span><span class="s2">);</span>
+                <span class="s2">}</span>
+            <span class="s2">} </span><span class="s0">else </span><span class="s2">{</span>
+                <span class="s1">goToGameOver</span><span class="s2">(</span><span class="s1">matchWinner</span><span class="s2">, </span><span class="s1">matchLoser</span><span class="s2">, </span><span class="s0">false</span><span class="s2">,</span>
+                        <span class="s1">matchManager</span><span class="s2">.</span><span class="s1">getCurrentRoundNumber</span><span class="s2">());</span>
+            <span class="s2">}</span>
+        <span class="s2">} </span><span class="s0">else </span><span class="s2">{</span>
+            <span class="s3">// Match not yet decided — play the next round</span>
+            <span class="s1">launchRound</span><span class="s2">();</span>
+        <span class="s2">}</span>
+    <span class="s2">}</span>
+
+    <span class="s3">// ── Arcade helpers ────────────────────────────────────────────────</span>
+
+    <span class="s6">/**</span>
+     <span class="s6">* Begins a best-of-3 match against the next arcade opponent.</span>
+     <span class="s6">* The player's permanent stat boosts carry over; HP/Mana are reset.</span>
+     <span class="s6">*/</span>
+    <span class="s0">private void </span><span class="s1">launchNextArcadeOpponent</span><span class="s2">() {</span>
+        <span class="s0">if </span><span class="s2">(</span><span class="s1">arcadeCurrentOpponent </span><span class="s2">&gt;= </span><span class="s1">Math</span><span class="s2">.</span><span class="s1">min</span><span class="s2">(</span><span class="s1">arcadeOpponentIndices</span><span class="s2">.</span><span class="s1">length</span><span class="s2">, </span><span class="s1">ARCADE_OPPONENTS</span><span class="s2">)) {</span>
+            <span class="s1">goToGameOver</span><span class="s2">(</span><span class="s1">arcadePlayer</span><span class="s2">, </span><span class="s0">null</span><span class="s2">, </span><span class="s0">true</span><span class="s2">, </span><span class="s1">arcadeCurrentOpponent</span><span class="s2">);</span>
+            <span class="s0">return</span><span class="s2">;</span>
+        <span class="s2">}</span>
+
+        <span class="s1">Character opponent </span><span class="s2">= </span><span class="s1">characterManager</span><span class="s2">.</span><span class="s1">createCharacter</span><span class="s2">(</span>
+                <span class="s1">arcadeOpponentIndices</span><span class="s2">[</span><span class="s1">arcadeCurrentOpponent</span><span class="s2">]);</span>
+        <span class="s1">opponent</span><span class="s2">.</span><span class="s1">setPlayer</span><span class="s2">(</span><span class="s0">false</span><span class="s2">);</span>
+        <span class="s1">opponent</span><span class="s2">.</span><span class="s1">setName</span><span class="s2">(</span><span class="s1">characterManager</span><span class="s2">.</span><span class="s1">getArcadeName</span><span class="s2">(</span><span class="s1">opponent</span><span class="s2">.</span><span class="s1">getName</span><span class="s2">()));</span>
+
+        <span class="s3">// Full HP/Mana reset for the player at the start of each new opponent</span>
+        <span class="s1">arcadePlayer</span><span class="s2">.</span><span class="s1">setHealth</span><span class="s2">(</span><span class="s1">arcadePlayer</span><span class="s2">.</span><span class="s1">getMaxHealth</span><span class="s2">());</span>
+        <span class="s1">arcadePlayer</span><span class="s2">.</span><span class="s1">setCurrentMana</span><span class="s2">(</span><span class="s1">arcadePlayer</span><span class="s2">.</span><span class="s1">getMaxMana</span><span class="s2">());</span>
+
+        <span class="s1">matchManager</span><span class="s2">.</span><span class="s1">startMatch</span><span class="s2">(</span><span class="s1">arcadePlayer</span><span class="s2">, </span><span class="s1">opponent</span><span class="s2">, </span><span class="s0">false</span><span class="s2">, </span><span class="s0">true</span><span class="s2">);</span>
+        <span class="s1">launchRound</span><span class="s2">();</span>
+    <span class="s2">}</span>
+
+    <span class="s6">/**</span>
+     <span class="s6">* Called when arcadePlayer wins the best-of-3 bout vs. the current opponent.</span>
+     <span class="s6">*/</span>
+    <span class="s0">private void </span><span class="s1">onArcadeBoutWon</span><span class="s2">() {</span>
+        <span class="s1">arcadeCurrentOpponent</span><span class="s2">++;</span>
+        <span class="s0">if </span><span class="s2">(</span><span class="s1">arcadeCurrentOpponent </span><span class="s2">&gt;= </span><span class="s1">Math</span><span class="s2">.</span><span class="s1">min</span><span class="s2">(</span><span class="s1">arcadeOpponentIndices</span><span class="s2">.</span><span class="s1">length</span><span class="s2">, </span><span class="s1">ARCADE_OPPONENTS</span><span class="s2">)) {</span>
+            <span class="s1">goToGameOver</span><span class="s2">(</span><span class="s1">arcadePlayer</span><span class="s2">, </span><span class="s0">null</span><span class="s2">, </span><span class="s0">true</span><span class="s2">, </span><span class="s1">arcadeCurrentOpponent</span><span class="s2">);</span>
+        <span class="s2">} </span><span class="s0">else </span><span class="s2">{</span>
+            <span class="s1">arcadeRewardScreen</span><span class="s2">.</span><span class="s1">setup</span><span class="s2">(</span><span class="s1">arcadePlayer</span><span class="s2">, </span><span class="s1">arcadeCurrentOpponent</span><span class="s2">, </span><span class="s1">ARCADE_OPPONENTS</span><span class="s2">);</span>
+            <span class="s1">setGameState</span><span class="s2">(</span><span class="s1">GameState</span><span class="s2">.</span><span class="s1">ARCADE_REWARD</span><span class="s2">);</span>
+        <span class="s2">}</span>
+    <span class="s2">}</span>
+
+    <span class="s6">/** Called by ArcadeRewardScreen after the player picks a reward. */</span>
+    <span class="s0">public void </span><span class="s1">continueArcade</span><span class="s2">() {</span>
+        <span class="s1">launchNextArcadeOpponent</span><span class="s2">();</span>
+    <span class="s2">}</span>
+
+    <span class="s6">/**</span>
+     <span class="s6">* Legacy hook — BattleScreen may still call this for arcade wins.</span>
+     <span class="s6">* Re-routed through onRoundOver so MatchManager stays authoritative.</span>
+     <span class="s6">*/</span>
+    <span class="s0">public void </span><span class="s1">onArcadeRoundWon</span><span class="s2">(</span><span class="s0">int </span><span class="s1">roundJustWon</span><span class="s2">, </span><span class="s0">int </span><span class="s1">totalRounds</span><span class="s2">) {</span>
+        <span class="s1">onRoundOver</span><span class="s2">(</span><span class="s1">matchManager</span><span class="s2">.</span><span class="s1">getPlayer1</span><span class="s2">(), </span><span class="s1">matchManager</span><span class="s2">.</span><span class="s1">getPlayer2</span><span class="s2">());</span>
+    <span class="s2">}</span>
+
+    <span class="s3">// ── Game Over ─────────────────────────────────────────────────────</span>
+    <span class="s0">public void </span><span class="s1">goToGameOver</span><span class="s2">(</span><span class="s1">Character winner</span><span class="s2">, </span><span class="s1">Character loser</span><span class="s2">,</span>
+                             <span class="s0">boolean </span><span class="s1">arcadeMode</span><span class="s2">, </span><span class="s0">int </span><span class="s1">roundsWon</span><span class="s2">) {</span>
+        <span class="s1">gameOverScreen</span><span class="s2">.</span><span class="s1">setup</span><span class="s2">(</span><span class="s1">winner</span><span class="s2">, </span><span class="s1">loser</span><span class="s2">, </span><span class="s1">arcadeMode</span><span class="s2">, </span><span class="s1">roundsWon</span><span class="s2">);</span>
+        <span class="s1">setGameState</span><span class="s2">(</span><span class="s1">GameState</span><span class="s2">.</span><span class="s1">GAME_OVER</span><span class="s2">);</span>
+    <span class="s2">}</span>
+
+    <span class="s3">// ═════════════════════════════════════════════════════════════════</span>
+    <span class="s3">//  Getters / Setters</span>
+    <span class="s3">// ═════════════════════════════════════════════════════════════════</span>
+    <span class="s0">public </span><span class="s1">GameState getGameState</span><span class="s2">()  { </span><span class="s0">return </span><span class="s1">gameState</span><span class="s2">; }</span>
+    <span class="s0">public void </span><span class="s1">setGameState</span><span class="s2">(</span><span class="s1">GameState gameState</span><span class="s2">) {</span>
+        <span class="s0">this</span><span class="s2">.</span><span class="s1">gameState </span><span class="s2">= </span><span class="s1">gameState</span><span class="s2">;</span>
+        <span class="s0">switch</span><span class="s2">(</span><span class="s1">gameState</span><span class="s2">) {</span>
+
+            <span class="s0">case </span><span class="s1">MENU</span><span class="s2">:</span>
+                <span class="s1">audioManager</span><span class="s2">.</span><span class="s1">stopMusic</span><span class="s2">();</span>
+                <span class="s1">audioManager</span><span class="s2">.</span><span class="s1">playMusic</span><span class="s2">(</span><span class="s5">&quot;/resources/Music/menu_music.wav&quot;</span><span class="s2">);</span>
+                <span class="s0">break</span><span class="s2">;</span>
+            <span class="s0">case </span><span class="s1">BATTLE</span><span class="s2">:</span>
+                <span class="s1">audioManager</span><span class="s2">.</span><span class="s1">stopMusic</span><span class="s2">();</span>
+                <span class="s1">audioManager</span><span class="s2">.</span><span class="s1">playMusic</span><span class="s2">(</span><span class="s5">&quot;/resources/Music/battle_music.wav&quot;</span><span class="s2">);</span>
+                <span class="s0">break</span><span class="s2">;</span>
+            <span class="s0">case </span><span class="s1">GAME_OVER</span><span class="s2">:</span>
+                <span class="s1">audioManager</span><span class="s2">.</span><span class="s1">stopMusic</span><span class="s2">();</span>
+                <span class="s1">audioManager</span><span class="s2">.</span><span class="s1">playMusic</span><span class="s2">(</span><span class="s5">&quot;/resources/Music/gameover_music.wav&quot;</span><span class="s2">);</span>
+                <span class="s0">break</span><span class="s2">;</span>
+        <span class="s2">}</span>
+        <span class="s1">repaint</span><span class="s2">();</span>
+    <span class="s2">}</span>
+
+    <span class="s0">public </span><span class="s1">String getGameMode</span><span class="s2">()      { </span><span class="s0">return </span><span class="s1">gameMode</span><span class="s2">; }</span>
+    <span class="s0">public void </span><span class="s1">setGameMode</span><span class="s2">(</span><span class="s1">String gameMode</span><span class="s2">) { </span><span class="s0">this</span><span class="s2">.</span><span class="s1">gameMode </span><span class="s2">= </span><span class="s1">gameMode</span><span class="s2">; }</span>
+
+    <span class="s0">public </span><span class="s1">String getSelectedCharacter</span><span class="s2">() { </span><span class="s0">return </span><span class="s1">selectedCharacter</span><span class="s2">; }</span>
+    <span class="s0">public void </span><span class="s1">setSelectedCharacter</span><span class="s2">(</span><span class="s1">String selectedCharacter</span><span class="s2">) {</span>
+        <span class="s0">this</span><span class="s2">.</span><span class="s1">selectedCharacter </span><span class="s2">= </span><span class="s1">selectedCharacter</span><span class="s2">;</span>
+        <span class="s1">System</span><span class="s2">.</span><span class="s1">out</span><span class="s2">.</span><span class="s1">println</span><span class="s2">(</span><span class="s5">&quot;Selected: &quot; </span><span class="s2">+ </span><span class="s1">selectedCharacter </span><span class="s2">+ </span><span class="s5">&quot; for &quot; </span><span class="s2">+ </span><span class="s1">gameMode</span><span class="s2">);</span>
+    <span class="s2">}</span>
+
+    <span class="s6">/** Exposes MatchManager so BattleScreen can read win counts for the HUD. */</span>
+    <span class="s0">public </span><span class="s1">MatchManager getMatchManager</span><span class="s2">() { </span><span class="s0">return </span><span class="s1">matchManager</span><span class="s2">; }</span>
+
+    <span class="s0">public </span><span class="s1">StartScreen getStartScreen</span><span class="s2">()                     { </span><span class="s0">return </span><span class="s1">startScreen</span><span class="s2">; }</span>
+    <span class="s0">public </span><span class="s1">MenuScreen getMenuScreen</span><span class="s2">()                       { </span><span class="s0">return </span><span class="s1">menuScreen</span><span class="s2">; }</span>
+    <span class="s0">public </span><span class="s1">CharacterSelectScreen getCharacterSelectScreen</span><span class="s2">() { </span><span class="s0">return </span><span class="s1">characterSelectScreen</span><span class="s2">; }</span>
+    <span class="s0">public </span><span class="s1">BattleScreen getBattleScreen</span><span class="s2">()                   { </span><span class="s0">return </span><span class="s1">battleScreen</span><span class="s2">; }</span>
+    <span class="s0">public </span><span class="s1">ArcadeRewardScreen getArcadeRewardScreen</span><span class="s2">()       { </span><span class="s0">return </span><span class="s1">arcadeRewardScreen</span><span class="s2">; }</span>
+    <span class="s0">public </span><span class="s1">GameOverScreen getGameOverScreen</span><span class="s2">()               { </span><span class="s0">return </span><span class="s1">gameOverScreen</span><span class="s2">; }</span>
+
+    <span class="s3">// ═════════════════════════════════════════════════════════════════</span>
+    <span class="s3">//  Rendering</span>
+    <span class="s3">// ═════════════════════════════════════════════════════════════════</span>
+    <span class="s1">@Override</span>
+    <span class="s0">public void </span><span class="s1">paintComponent</span><span class="s2">(</span><span class="s1">Graphics g</span><span class="s2">) {</span>
+        <span class="s0">super</span><span class="s2">.</span><span class="s1">paintComponent</span><span class="s2">(</span><span class="s1">g</span><span class="s2">);</span>
+        <span class="s0">int </span><span class="s1">w </span><span class="s2">= </span><span class="s1">getWidth</span><span class="s2">();</span>
+        <span class="s0">int </span><span class="s1">h </span><span class="s2">= </span><span class="s1">getHeight</span><span class="s2">();</span>
+        <span class="s0">switch </span><span class="s2">(</span><span class="s1">gameState</span><span class="s2">) {</span>
+            <span class="s0">case </span><span class="s1">START</span><span class="s2">:</span>
+                <span class="s1">startScreen</span><span class="s2">.</span><span class="s1">draw</span><span class="s2">(</span><span class="s1">g</span><span class="s2">, </span><span class="s1">w</span><span class="s2">, </span><span class="s1">h</span><span class="s2">);</span>
+                <span class="s0">break</span><span class="s2">;</span>
+            <span class="s0">case </span><span class="s1">MENU</span><span class="s2">:</span>
+                <span class="s1">menuScreen</span><span class="s2">.</span><span class="s1">draw</span><span class="s2">(</span><span class="s1">g</span><span class="s2">, </span><span class="s1">w</span><span class="s2">, </span><span class="s1">h</span><span class="s2">);</span>
+                <span class="s0">break</span><span class="s2">;</span>
+            <span class="s0">case </span><span class="s1">CHARACTER_SELECT</span><span class="s2">:</span>
+                <span class="s1">characterSelectScreen</span><span class="s2">.</span><span class="s1">draw</span><span class="s2">(</span><span class="s1">g</span><span class="s2">, </span><span class="s1">w</span><span class="s2">, </span><span class="s1">h</span><span class="s2">);</span>
+                <span class="s0">break</span><span class="s2">;</span>
+            <span class="s0">case </span><span class="s1">CUTSCENE</span><span class="s2">:</span>
+                <span class="s1">roundCutscene</span><span class="s2">.</span><span class="s1">draw</span><span class="s2">(</span><span class="s1">g</span><span class="s2">, </span><span class="s1">w</span><span class="s2">, </span><span class="s1">h</span><span class="s2">);</span>
+                <span class="s0">break</span><span class="s2">;</span>
+            <span class="s0">case </span><span class="s1">BATTLE</span><span class="s2">:</span>
+                <span class="s1">battleScreen</span><span class="s2">.</span><span class="s1">draw</span><span class="s2">(</span><span class="s1">g</span><span class="s2">, </span><span class="s1">w</span><span class="s2">, </span><span class="s1">h</span><span class="s2">);</span>
+                <span class="s0">break</span><span class="s2">;</span>
+            <span class="s0">case </span><span class="s1">ARCADE_REWARD</span><span class="s2">:</span>
+                <span class="s1">arcadeRewardScreen</span><span class="s2">.</span><span class="s1">draw</span><span class="s2">(</span><span class="s1">g</span><span class="s2">, </span><span class="s1">w</span><span class="s2">, </span><span class="s1">h</span><span class="s2">);</span>
+                <span class="s0">break</span><span class="s2">;</span>
+            <span class="s0">case </span><span class="s1">GAME_OVER</span><span class="s2">:</span>
+                <span class="s1">gameOverScreen</span><span class="s2">.</span><span class="s1">draw</span><span class="s2">(</span><span class="s1">g</span><span class="s2">, </span><span class="s1">w</span><span class="s2">, </span><span class="s1">h</span><span class="s2">);</span>
+                <span class="s0">break</span><span class="s2">;</span>
+            <span class="s0">default</span><span class="s2">:</span>
+                <span class="s1">g</span><span class="s2">.</span><span class="s1">setColor</span><span class="s2">(</span><span class="s1">Color</span><span class="s2">.</span><span class="s1">BLACK</span><span class="s2">);</span>
+                <span class="s1">g</span><span class="s2">.</span><span class="s1">fillRect</span><span class="s2">(</span><span class="s4">0</span><span class="s2">, </span><span class="s4">0</span><span class="s2">, </span><span class="s1">w</span><span class="s2">, </span><span class="s1">h</span><span class="s2">);</span>
+                <span class="s0">break</span><span class="s2">;</span>
+        <span class="s2">}</span>
+    <span class="s2">}</span>
+<span class="s2">}</span>
+</pre>
+</body>
+</html>

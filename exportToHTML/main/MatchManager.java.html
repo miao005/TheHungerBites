@@ -1,0 +1,152 @@
+<html>
+<head>
+<title>MatchManager.java</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #cf8e6d;}
+.s1 { color: #bcbec4;}
+.s2 { color: #bcbec4;}
+.s3 { color: #5f826b; font-style: italic;}
+.s4 { color: #7a7e85;}
+.s5 { color: #2aacb8;}
+.s6 { color: #67a37c; font-style: italic;}
+</style>
+</head>
+<body bgcolor="#191a1c">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+MatchManager.java</font>
+</center></td></tr></table>
+<pre><span class="s0">package </span><span class="s1">main</span><span class="s2">;</span>
+
+<span class="s3">/**</span>
+ <span class="s3">* MatchManager — tracks best-of-3 state for a single match (PVP, PvAI, or one Arcade bout).</span>
+ <span class="s3">*</span>
+ <span class="s3">* Responsibilities:</span>
+ <span class="s3">*  • Stores the canonical Character references for P1 and P2.</span>
+ <span class="s3">*  • Counts wins for each side.</span>
+ <span class="s3">*  • Decides after each round whether the match is over or another round is needed.</span>
+ <span class="s3">*  • Resets characters to full HP/Mana between rounds (stats like damage boosts persist).</span>
+ <span class="s3">*</span>
+ <span class="s3">* OOP rationale:</span>
+ <span class="s3">*  • Single Responsibility — all &quot;is the match over?&quot; logic lives here, not scattered</span>
+ <span class="s3">*    across GamePanel / BattleScreen.</span>
+ <span class="s3">*  • Encapsulation — win counters and round number are private; callers use clear methods.</span>
+ <span class="s3">*/</span>
+<span class="s0">public class </span><span class="s1">MatchManager </span><span class="s2">{</span>
+
+    <span class="s4">// ── Constants ─────────────────────────────────────────────────────</span>
+    <span class="s0">public static final int </span><span class="s1">ROUNDS_TO_WIN </span><span class="s2">= </span><span class="s5">2</span><span class="s2">;   </span><span class="s4">// first to 2 wins takes the match</span>
+    <span class="s0">public static final int </span><span class="s1">MAX_ROUNDS    </span><span class="s2">= </span><span class="s5">3</span><span class="s2">;   </span><span class="s4">// best-of-3</span>
+
+    <span class="s4">// ── Match participants ─────────────────────────────────────────────</span>
+    <span class="s0">private </span><span class="s1">Character player1</span><span class="s2">;</span>
+    <span class="s0">private </span><span class="s1">Character player2</span><span class="s2">;</span>
+
+    <span class="s4">// ── Scores ────────────────────────────────────────────────────────</span>
+    <span class="s0">private int </span><span class="s1">p1Wins </span><span class="s2">= </span><span class="s5">0</span><span class="s2">;</span>
+    <span class="s0">private int </span><span class="s1">p2Wins </span><span class="s2">= </span><span class="s5">0</span><span class="s2">;</span>
+    <span class="s0">private int </span><span class="s1">currentRound </span><span class="s2">= </span><span class="s5">0</span><span class="s2">; </span><span class="s4">// 0-based; incremented at start of each round</span>
+
+    <span class="s4">// ── Mode flags (passed through to BattleScreen) ───────────────────</span>
+    <span class="s0">private boolean </span><span class="s1">aiMode</span><span class="s2">;</span>
+    <span class="s0">private boolean </span><span class="s1">arcadeMode</span><span class="s2">;</span>
+
+    <span class="s4">// ── Snapshot HP/Mana for resets ───────────────────────────────────</span>
+    <span class="s4">// We reset to MAX each round so characters start fresh,</span>
+    <span class="s4">// but keep any permanent stat changes (damage multiplier, maxHp boosts).</span>
+    <span class="s0">public </span><span class="s1">MatchManager</span><span class="s2">() {}</span>
+
+    <span class="s3">/**</span>
+     <span class="s3">* Initialises a fresh match between two characters.</span>
+     <span class="s3">* Call once per opponent pairing (not once per round).</span>
+     <span class="s3">*/</span>
+    <span class="s0">public void </span><span class="s1">startMatch</span><span class="s2">(</span><span class="s1">Character p1</span><span class="s2">, </span><span class="s1">Character p2</span><span class="s2">,</span>
+                           <span class="s0">boolean </span><span class="s1">aiMode</span><span class="s2">, </span><span class="s0">boolean </span><span class="s1">arcadeMode</span><span class="s2">) {</span>
+        <span class="s0">this</span><span class="s2">.</span><span class="s1">player1    </span><span class="s2">= </span><span class="s1">p1</span><span class="s2">;</span>
+        <span class="s0">this</span><span class="s2">.</span><span class="s1">player2    </span><span class="s2">= </span><span class="s1">p2</span><span class="s2">;</span>
+        <span class="s0">this</span><span class="s2">.</span><span class="s1">aiMode     </span><span class="s2">= </span><span class="s1">aiMode</span><span class="s2">;</span>
+        <span class="s0">this</span><span class="s2">.</span><span class="s1">arcadeMode </span><span class="s2">= </span><span class="s1">arcadeMode</span><span class="s2">;</span>
+        <span class="s0">this</span><span class="s2">.</span><span class="s1">p1Wins     </span><span class="s2">= </span><span class="s5">0</span><span class="s2">;</span>
+        <span class="s0">this</span><span class="s2">.</span><span class="s1">p2Wins     </span><span class="s2">= </span><span class="s5">0</span><span class="s2">;</span>
+        <span class="s0">this</span><span class="s2">.</span><span class="s1">currentRound </span><span class="s2">= </span><span class="s5">0</span><span class="s2">;</span>
+    <span class="s2">}</span>
+
+    <span class="s3">/**</span>
+     <span class="s3">* Call after a round ends with the round's winner (null = draw).</span>
+     <span class="s3">* Increments win counter and round number.</span>
+     <span class="s3">*</span>
+     <span class="s3">* </span><span class="s6">@return </span><span class="s3">true if the match is now decided, false if another round is needed.</span>
+     <span class="s3">*/</span>
+    <span class="s0">public boolean </span><span class="s1">recordRoundResult</span><span class="s2">(</span><span class="s1">Character roundWinner</span><span class="s2">) {</span>
+        <span class="s0">if </span><span class="s2">(</span><span class="s1">roundWinner </span><span class="s2">== </span><span class="s1">player1</span><span class="s2">) {</span>
+            <span class="s1">p1Wins</span><span class="s2">++;</span>
+        <span class="s2">} </span><span class="s0">else if </span><span class="s2">(</span><span class="s1">roundWinner </span><span class="s2">== </span><span class="s1">player2</span><span class="s2">) {</span>
+            <span class="s1">p2Wins</span><span class="s2">++;</span>
+        <span class="s2">}</span>
+        <span class="s4">// draw counts for neither — just burns a round</span>
+
+        <span class="s1">currentRound</span><span class="s2">++;</span>
+
+        <span class="s0">return </span><span class="s1">isMatchOver</span><span class="s2">();</span>
+    <span class="s2">}</span>
+
+    <span class="s3">/**</span>
+     <span class="s3">* Returns true when either player has reached ROUNDS_TO_WIN wins</span>
+     <span class="s3">* OR there are no more rounds left to play.</span>
+     <span class="s3">*/</span>
+    <span class="s0">public boolean </span><span class="s1">isMatchOver</span><span class="s2">() {</span>
+        <span class="s0">return </span><span class="s1">p1Wins </span><span class="s2">&gt;= </span><span class="s1">ROUNDS_TO_WIN</span>
+                <span class="s2">|| </span><span class="s1">p2Wins </span><span class="s2">&gt;= </span><span class="s1">ROUNDS_TO_WIN</span>
+                <span class="s2">|| </span><span class="s1">currentRound </span><span class="s2">&gt;= </span><span class="s1">MAX_ROUNDS</span><span class="s2">;</span>
+    <span class="s2">}</span>
+
+    <span class="s3">/**</span>
+     <span class="s3">* Returns the match winner, or null if it is a draw.</span>
+     <span class="s3">* Only meaningful once {</span><span class="s6">@link </span><span class="s3">#isMatchOver()} returns true.</span>
+     <span class="s3">*/</span>
+    <span class="s0">public </span><span class="s1">Character getMatchWinner</span><span class="s2">() {</span>
+        <span class="s0">if </span><span class="s2">(</span><span class="s1">p1Wins </span><span class="s2">&gt; </span><span class="s1">p2Wins</span><span class="s2">) </span><span class="s0">return </span><span class="s1">player1</span><span class="s2">;</span>
+        <span class="s0">if </span><span class="s2">(</span><span class="s1">p2Wins </span><span class="s2">&gt; </span><span class="s1">p1Wins</span><span class="s2">) </span><span class="s0">return </span><span class="s1">player2</span><span class="s2">;</span>
+        <span class="s0">return null</span><span class="s2">; </span><span class="s4">// draw</span>
+    <span class="s2">}</span>
+
+    <span class="s3">/**</span>
+     <span class="s3">* The round number that is ABOUT TO START (1-based).</span>
+     <span class="s3">* Increment currentRound via recordRoundResult first.</span>
+     <span class="s3">*/</span>
+    <span class="s0">public int </span><span class="s1">getNextRoundNumber</span><span class="s2">() {</span>
+        <span class="s0">return </span><span class="s1">currentRound </span><span class="s2">+ </span><span class="s5">1</span><span class="s2">;</span>
+    <span class="s2">}</span>
+
+    <span class="s3">/**</span>
+     <span class="s3">* Current round number that is IN PROGRESS (1-based).</span>
+     <span class="s3">* Valid after the first call to advanceRound().</span>
+     <span class="s3">*/</span>
+    <span class="s0">public int </span><span class="s1">getCurrentRoundNumber</span><span class="s2">() {</span>
+        <span class="s0">return </span><span class="s1">currentRound</span><span class="s2">; </span><span class="s4">// currentRound is incremented after each round ends</span>
+    <span class="s2">}</span>
+
+    <span class="s3">/**</span>
+     <span class="s3">* Resets both characters to full HP and full Mana so they start the</span>
+     <span class="s3">* next round fresh. Permanent stat boosts (maxHp, damageMultiplier) are kept.</span>
+     <span class="s3">*/</span>
+    <span class="s0">public void </span><span class="s1">resetCharactersForNextRound</span><span class="s2">() {</span>
+        <span class="s1">player1</span><span class="s2">.</span><span class="s1">setHealth</span><span class="s2">(</span><span class="s1">player1</span><span class="s2">.</span><span class="s1">getMaxHealth</span><span class="s2">());</span>
+        <span class="s1">player1</span><span class="s2">.</span><span class="s1">setCurrentMana</span><span class="s2">(</span><span class="s1">player1</span><span class="s2">.</span><span class="s1">getMaxMana</span><span class="s2">());</span>
+        <span class="s1">player2</span><span class="s2">.</span><span class="s1">setHealth</span><span class="s2">(</span><span class="s1">player2</span><span class="s2">.</span><span class="s1">getMaxHealth</span><span class="s2">());</span>
+        <span class="s1">player2</span><span class="s2">.</span><span class="s1">setCurrentMana</span><span class="s2">(</span><span class="s1">player2</span><span class="s2">.</span><span class="s1">getMaxMana</span><span class="s2">());</span>
+    <span class="s2">}</span>
+
+    <span class="s4">// ── Getters ───────────────────────────────────────────────────────</span>
+    <span class="s0">public </span><span class="s1">Character getPlayer1</span><span class="s2">()   { </span><span class="s0">return </span><span class="s1">player1</span><span class="s2">; }</span>
+    <span class="s0">public </span><span class="s1">Character getPlayer2</span><span class="s2">()   { </span><span class="s0">return </span><span class="s1">player2</span><span class="s2">; }</span>
+    <span class="s0">public int </span><span class="s1">getP1Wins</span><span class="s2">()          { </span><span class="s0">return </span><span class="s1">p1Wins</span><span class="s2">; }</span>
+    <span class="s0">public int </span><span class="s1">getP2Wins</span><span class="s2">()          { </span><span class="s0">return </span><span class="s1">p2Wins</span><span class="s2">; }</span>
+    <span class="s0">public boolean </span><span class="s1">isAiMode</span><span class="s2">()       { </span><span class="s0">return </span><span class="s1">aiMode</span><span class="s2">; }</span>
+    <span class="s0">public boolean </span><span class="s1">isArcadeMode</span><span class="s2">()   { </span><span class="s0">return </span><span class="s1">arcadeMode</span><span class="s2">; }</span>
+<span class="s2">}</span>
+</pre>
+</body>
+</html>

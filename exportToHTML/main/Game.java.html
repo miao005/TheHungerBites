@@ -1,0 +1,30 @@
+<html>
+<head>
+<title>Game.java</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #cf8e6d;}
+.s1 { color: #bcbec4;}
+.s2 { color: #bcbec4;}
+</style>
+</head>
+<body bgcolor="#191a1c">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+Game.java</font>
+</center></td></tr></table>
+<pre><span class="s0">package </span><span class="s1">main</span><span class="s2">;</span>
+
+<span class="s0">public class </span><span class="s1">Game </span><span class="s2">{</span>
+    <span class="s0">private </span><span class="s1">GameWindow gameWindow</span><span class="s2">;</span>
+    <span class="s0">private </span><span class="s1">GamePanel gamePanel</span><span class="s2">;</span>
+    <span class="s0">public </span><span class="s1">Game</span><span class="s2">(){</span>
+        <span class="s1">gamePanel </span><span class="s2">= </span><span class="s0">new </span><span class="s1">GamePanel</span><span class="s2">();</span>
+        <span class="s1">gameWindow </span><span class="s2">= </span><span class="s0">new </span><span class="s1">GameWindow</span><span class="s2">(</span><span class="s1">gamePanel</span><span class="s2">);</span>
+        <span class="s1">gamePanel</span><span class="s2">.</span><span class="s1">requestFocus</span><span class="s2">();</span>
+    <span class="s2">}</span>
+<span class="s2">}</span>
+</pre>
+</body>
+</html>

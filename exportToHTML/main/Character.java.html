@@ -1,0 +1,142 @@
+<html>
+<head>
+<title>Character.java</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #cf8e6d;}
+.s1 { color: #bcbec4;}
+.s2 { color: #bcbec4;}
+.s3 { color: #2aacb8;}
+.s4 { color: #7a7e85;}
+.s5 { color: #6aab73;}
+</style>
+</head>
+<body bgcolor="#191a1c">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+Character.java</font>
+</center></td></tr></table>
+<pre><span class="s0">package </span><span class="s1">main</span><span class="s2">;</span>
+
+<span class="s0">import </span><span class="s1">java</span><span class="s2">.</span><span class="s1">util</span><span class="s2">.</span><span class="s1">Random</span><span class="s2">;</span>
+
+<span class="s0">public abstract class </span><span class="s1">Character </span><span class="s2">{</span>
+    <span class="s0">protected </span><span class="s1">String name</span><span class="s2">;</span>
+    <span class="s0">protected int </span><span class="s1">hp</span><span class="s2">;</span>
+    <span class="s0">protected int </span><span class="s1">maxHp</span><span class="s2">;</span>
+    <span class="s0">protected int </span><span class="s1">currMana</span><span class="s2">;</span>
+    <span class="s0">protected int </span><span class="s1">maxMana</span><span class="s2">;</span>
+    <span class="s0">protected int </span><span class="s1">regenMana</span><span class="s2">;</span>
+    <span class="s0">protected </span><span class="s1">Random random</span><span class="s2">;</span>
+    <span class="s0">protected </span><span class="s1">String title</span><span class="s2">;</span>
+    <span class="s0">protected </span><span class="s1">String backstory</span><span class="s2">;</span>
+    <span class="s0">protected </span><span class="s1">String basicAttack</span><span class="s2">;</span>
+    <span class="s0">protected </span><span class="s1">String skillAttack</span><span class="s2">;</span>
+    <span class="s0">protected </span><span class="s1">String ultimateAttack</span><span class="s2">;</span>
+    <span class="s0">private double </span><span class="s1">damageMultiplier </span><span class="s2">= </span><span class="s3">1.0</span><span class="s2">;</span>
+    <span class="s0">private boolean </span><span class="s1">isPlayer</span><span class="s2">;</span>
+
+    <span class="s4">// Last action info for battle log</span>
+    <span class="s0">private </span><span class="s1">String lastActionText </span><span class="s2">= </span><span class="s5">&quot;&quot;</span><span class="s2">;</span>
+    <span class="s0">private int </span><span class="s1">lastDamageDealt </span><span class="s2">= </span><span class="s3">0</span><span class="s2">;</span>
+    <span class="s0">private boolean </span><span class="s1">lastActionFailed </span><span class="s2">= </span><span class="s0">false</span><span class="s2">;</span>
+    <span class="s0">private boolean </span><span class="s1">lastActionWasRest </span><span class="s2">= </span><span class="s0">false</span><span class="s2">;</span>
+    <span class="s0">private int </span><span class="s1">lastHealAmount </span><span class="s2">= </span><span class="s3">0</span><span class="s2">;</span>
+
+    <span class="s0">public </span><span class="s1">Character</span><span class="s2">(</span><span class="s1">String name</span><span class="s2">, </span><span class="s0">int </span><span class="s1">maxHp</span><span class="s2">, </span><span class="s0">int </span><span class="s1">maxMana</span><span class="s2">, </span><span class="s0">int </span><span class="s1">regenMana</span><span class="s2">) {</span>
+        <span class="s0">this</span><span class="s2">.</span><span class="s1">name </span><span class="s2">= </span><span class="s1">name</span><span class="s2">;</span>
+        <span class="s0">this</span><span class="s2">.</span><span class="s1">maxHp </span><span class="s2">= </span><span class="s1">maxHp</span><span class="s2">;</span>
+        <span class="s0">this</span><span class="s2">.</span><span class="s1">hp </span><span class="s2">= </span><span class="s1">maxHp</span><span class="s2">;</span>
+        <span class="s0">this</span><span class="s2">.</span><span class="s1">maxMana </span><span class="s2">= </span><span class="s1">maxMana</span><span class="s2">;</span>
+        <span class="s0">this</span><span class="s2">.</span><span class="s1">currMana </span><span class="s2">= </span><span class="s1">maxMana</span><span class="s2">;</span>
+        <span class="s0">this</span><span class="s2">.</span><span class="s1">regenMana </span><span class="s2">= </span><span class="s1">regenMana</span><span class="s2">;</span>
+        <span class="s0">this</span><span class="s2">.</span><span class="s1">random </span><span class="s2">= </span><span class="s0">new </span><span class="s1">Random</span><span class="s2">();</span>
+    <span class="s2">}</span>
+
+    <span class="s0">public void </span><span class="s1">regenerateMana</span><span class="s2">() {</span>
+        <span class="s0">this</span><span class="s2">.</span><span class="s1">currMana </span><span class="s2">= </span><span class="s1">Math</span><span class="s2">.</span><span class="s1">min</span><span class="s2">(</span><span class="s0">this</span><span class="s2">.</span><span class="s1">maxMana</span><span class="s2">, </span><span class="s0">this</span><span class="s2">.</span><span class="s1">currMana </span><span class="s2">+ </span><span class="s0">this</span><span class="s2">.</span><span class="s1">regenMana</span><span class="s2">);</span>
+    <span class="s2">}</span>
+
+    <span class="s0">protected void </span><span class="s1">performAttack</span><span class="s2">(</span><span class="s1">Character target</span><span class="s2">, </span><span class="s0">int </span><span class="s1">minDamage</span><span class="s2">, </span><span class="s0">int </span><span class="s1">maxDamage</span><span class="s2">, </span><span class="s0">int </span><span class="s1">manaCost</span><span class="s2">, </span><span class="s1">String skillName</span><span class="s2">) {</span>
+        <span class="s1">lastActionWasRest </span><span class="s2">= </span><span class="s0">false</span><span class="s2">;</span>
+        <span class="s1">lastActionFailed </span><span class="s2">= </span><span class="s0">false</span><span class="s2">;</span>
+        <span class="s1">lastDamageDealt </span><span class="s2">= </span><span class="s3">0</span><span class="s2">;</span>
+        <span class="s1">lastHealAmount </span><span class="s2">= </span><span class="s3">0</span><span class="s2">;</span>
+
+        <span class="s0">if </span><span class="s2">(</span><span class="s1">skillName</span><span class="s2">.</span><span class="s1">equals</span><span class="s2">(</span><span class="s5">&quot;Rest&quot;</span><span class="s2">)) {</span>
+            <span class="s1">lastActionWasRest </span><span class="s2">= </span><span class="s0">true</span><span class="s2">;</span>
+            <span class="s0">int </span><span class="s1">heal </span><span class="s2">= (</span><span class="s0">int</span><span class="s2">) </span><span class="s1">Math</span><span class="s2">.</span><span class="s1">floor</span><span class="s2">(</span><span class="s0">this</span><span class="s2">.</span><span class="s1">maxHp </span><span class="s2">* </span><span class="s3">0.10</span><span class="s2">);</span>
+            <span class="s0">this</span><span class="s2">.</span><span class="s1">hp </span><span class="s2">= (</span><span class="s0">int</span><span class="s2">) </span><span class="s1">Math</span><span class="s2">.</span><span class="s1">min</span><span class="s2">(</span><span class="s0">this</span><span class="s2">.</span><span class="s1">maxHp</span><span class="s2">, </span><span class="s0">this</span><span class="s2">.</span><span class="s1">hp </span><span class="s2">+ </span><span class="s1">heal</span><span class="s2">);</span>
+            <span class="s1">lastHealAmount </span><span class="s2">= </span><span class="s1">heal</span><span class="s2">;</span>
+            <span class="s1">lastActionText </span><span class="s2">= </span><span class="s0">this</span><span class="s2">.</span><span class="s1">name </span><span class="s2">+ </span><span class="s5">&quot; rests and heals +&quot; </span><span class="s2">+ </span><span class="s1">heal </span><span class="s2">+ </span><span class="s5">&quot; HP!&quot;</span><span class="s2">;</span>
+            <span class="s0">return</span><span class="s2">;</span>
+        <span class="s2">}</span>
+
+        <span class="s0">if </span><span class="s2">(</span><span class="s0">this</span><span class="s2">.</span><span class="s1">currMana </span><span class="s2">&lt; </span><span class="s1">manaCost</span><span class="s2">) {</span>
+            <span class="s1">lastActionFailed </span><span class="s2">= </span><span class="s0">true</span><span class="s2">;</span>
+            <span class="s1">lastActionText </span><span class="s2">= </span><span class="s0">this</span><span class="s2">.</span><span class="s1">name </span><span class="s2">+ </span><span class="s5">&quot; doesn't have enough mana for &quot; </span><span class="s2">+ </span><span class="s1">skillName </span><span class="s2">+ </span><span class="s5">&quot;!&quot;</span><span class="s2">;</span>
+            <span class="s0">return</span><span class="s2">;</span>
+        <span class="s2">}</span>
+
+        <span class="s0">this</span><span class="s2">.</span><span class="s1">currMana </span><span class="s2">-= </span><span class="s1">manaCost</span><span class="s2">;</span>
+        <span class="s0">int </span><span class="s1">baseDamage </span><span class="s2">= </span><span class="s1">minDamage </span><span class="s2">+ </span><span class="s0">this</span><span class="s2">.</span><span class="s1">random</span><span class="s2">.</span><span class="s1">nextInt</span><span class="s2">(</span><span class="s1">maxDamage </span><span class="s2">- </span><span class="s1">minDamage </span><span class="s2">+ </span><span class="s3">1</span><span class="s2">);</span>
+        <span class="s0">int </span><span class="s1">finalDamage </span><span class="s2">= (</span><span class="s0">int</span><span class="s2">) (</span><span class="s1">baseDamage </span><span class="s2">* </span><span class="s0">this</span><span class="s2">.</span><span class="s1">damageMultiplier</span><span class="s2">);</span>
+        <span class="s1">target</span><span class="s2">.</span><span class="s1">takeDamage</span><span class="s2">(</span><span class="s1">finalDamage</span><span class="s2">);</span>
+        <span class="s1">lastDamageDealt </span><span class="s2">= </span><span class="s1">finalDamage</span><span class="s2">;</span>
+        <span class="s1">lastActionText </span><span class="s2">= </span><span class="s0">this</span><span class="s2">.</span><span class="s1">name </span><span class="s2">+ </span><span class="s5">&quot; uses &quot; </span><span class="s2">+ </span><span class="s1">skillName </span><span class="s2">+ </span><span class="s5">&quot; → &quot; </span><span class="s2">+ </span><span class="s1">finalDamage </span><span class="s2">+ </span><span class="s5">&quot; damage to &quot; </span><span class="s2">+ </span><span class="s1">target</span><span class="s2">.</span><span class="s1">name </span><span class="s2">+ </span><span class="s5">&quot;!&quot;</span><span class="s2">;</span>
+    <span class="s2">}</span>
+
+    <span class="s0">public abstract void </span><span class="s1">basicAttack</span><span class="s2">(</span><span class="s1">Character target</span><span class="s2">);</span>
+    <span class="s0">public abstract void </span><span class="s1">skillAttack</span><span class="s2">(</span><span class="s1">Character target</span><span class="s2">);</span>
+    <span class="s0">public abstract void </span><span class="s1">ultimateAttack</span><span class="s2">(</span><span class="s1">Character target</span><span class="s2">);</span>
+    <span class="s0">public abstract void </span><span class="s1">rest</span><span class="s2">(</span><span class="s1">Character target</span><span class="s2">);</span>
+
+    <span class="s0">public void </span><span class="s1">takeDamage</span><span class="s2">(</span><span class="s0">int </span><span class="s1">damage</span><span class="s2">) {</span>
+        <span class="s0">this</span><span class="s2">.</span><span class="s1">hp </span><span class="s2">= </span><span class="s1">Math</span><span class="s2">.</span><span class="s1">max</span><span class="s2">(</span><span class="s3">0</span><span class="s2">, </span><span class="s0">this</span><span class="s2">.</span><span class="s1">hp </span><span class="s2">- </span><span class="s1">damage</span><span class="s2">);</span>
+    <span class="s2">}</span>
+
+    <span class="s0">public boolean </span><span class="s1">isAlive</span><span class="s2">() { </span><span class="s0">return this</span><span class="s2">.</span><span class="s1">hp </span><span class="s2">&gt; </span><span class="s3">0</span><span class="s2">; }</span>
+
+    <span class="s4">// Getters</span>
+    <span class="s0">public </span><span class="s1">String getName</span><span class="s2">() { </span><span class="s0">return </span><span class="s1">name</span><span class="s2">; }</span>
+    <span class="s0">public void </span><span class="s1">setName</span><span class="s2">(</span><span class="s1">String name</span><span class="s2">) { </span><span class="s0">this</span><span class="s2">.</span><span class="s1">name </span><span class="s2">= </span><span class="s1">name</span><span class="s2">; }</span>
+    <span class="s0">public int </span><span class="s1">getHealth</span><span class="s2">() { </span><span class="s0">return </span><span class="s1">hp</span><span class="s2">; }</span>
+    <span class="s0">public int </span><span class="s1">getMaxHealth</span><span class="s2">() { </span><span class="s0">return </span><span class="s1">maxHp</span><span class="s2">; }</span>
+    <span class="s0">public int </span><span class="s1">getCurrentMana</span><span class="s2">() { </span><span class="s0">return </span><span class="s1">currMana</span><span class="s2">; }</span>
+    <span class="s0">public int </span><span class="s1">getMaxMana</span><span class="s2">() { </span><span class="s0">return </span><span class="s1">maxMana</span><span class="s2">; }</span>
+    <span class="s0">public </span><span class="s1">String getTitle</span><span class="s2">() { </span><span class="s0">return </span><span class="s1">title</span><span class="s2">; }</span>
+    <span class="s0">public </span><span class="s1">String getBackstory</span><span class="s2">() { </span><span class="s0">return </span><span class="s1">backstory</span><span class="s2">; }</span>
+    <span class="s0">public </span><span class="s1">String getBasicAttackDesc</span><span class="s2">() { </span><span class="s0">return </span><span class="s1">basicAttack</span><span class="s2">; }</span>
+    <span class="s0">public </span><span class="s1">String getSkillAttackDesc</span><span class="s2">() { </span><span class="s0">return </span><span class="s1">skillAttack</span><span class="s2">; }</span>
+    <span class="s0">public </span><span class="s1">String getUltimateAttackDesc</span><span class="s2">() { </span><span class="s0">return </span><span class="s1">ultimateAttack</span><span class="s2">; }</span>
+    <span class="s0">public void </span><span class="s1">setMaxHealth</span><span class="s2">(</span><span class="s0">int </span><span class="s1">maxHealth</span><span class="s2">) { </span><span class="s0">this</span><span class="s2">.</span><span class="s1">maxHp </span><span class="s2">= </span><span class="s1">maxHealth</span><span class="s2">; }</span>
+    <span class="s0">public void </span><span class="s1">setMaxMana</span><span class="s2">(</span><span class="s0">int </span><span class="s1">maxMana</span><span class="s2">) { </span><span class="s0">this</span><span class="s2">.</span><span class="s1">maxMana </span><span class="s2">= </span><span class="s1">maxMana</span><span class="s2">; }</span>
+    <span class="s0">public void </span><span class="s1">setHealth</span><span class="s2">(</span><span class="s0">int </span><span class="s1">health</span><span class="s2">) { </span><span class="s0">this</span><span class="s2">.</span><span class="s1">hp </span><span class="s2">= </span><span class="s1">Math</span><span class="s2">.</span><span class="s1">max</span><span class="s2">(</span><span class="s3">0</span><span class="s2">, </span><span class="s1">Math</span><span class="s2">.</span><span class="s1">min</span><span class="s2">(</span><span class="s1">health</span><span class="s2">, </span><span class="s0">this</span><span class="s2">.</span><span class="s1">maxHp</span><span class="s2">)); }</span>
+    <span class="s0">public void </span><span class="s1">setCurrentMana</span><span class="s2">(</span><span class="s0">int </span><span class="s1">mana</span><span class="s2">) { </span><span class="s0">this</span><span class="s2">.</span><span class="s1">currMana </span><span class="s2">= </span><span class="s1">Math</span><span class="s2">.</span><span class="s1">min</span><span class="s2">(</span><span class="s1">mana</span><span class="s2">, </span><span class="s0">this</span><span class="s2">.</span><span class="s1">maxMana</span><span class="s2">); }</span>
+    <span class="s0">public void </span><span class="s1">increaseDamage</span><span class="s2">(</span><span class="s0">double </span><span class="s1">multiplier</span><span class="s2">) { </span><span class="s0">this</span><span class="s2">.</span><span class="s1">damageMultiplier </span><span class="s2">+= </span><span class="s1">multiplier</span><span class="s2">; }</span>
+    <span class="s0">public double </span><span class="s1">getDamageMultiplier</span><span class="s2">() { </span><span class="s0">return </span><span class="s1">damageMultiplier</span><span class="s2">; }</span>
+    <span class="s0">public boolean </span><span class="s1">isPlayer</span><span class="s2">() { </span><span class="s0">return </span><span class="s1">isPlayer</span><span class="s2">; }</span>
+    <span class="s0">public void </span><span class="s1">setPlayer</span><span class="s2">(</span><span class="s0">boolean </span><span class="s1">isPlayer</span><span class="s2">) { </span><span class="s0">this</span><span class="s2">.</span><span class="s1">isPlayer </span><span class="s2">= </span><span class="s1">isPlayer</span><span class="s2">; }</span>
+    <span class="s0">public </span><span class="s1">String getLastActionText</span><span class="s2">() { </span><span class="s0">return </span><span class="s1">lastActionText</span><span class="s2">; }</span>
+    <span class="s0">public int </span><span class="s1">getLastDamageDealt</span><span class="s2">() { </span><span class="s0">return </span><span class="s1">lastDamageDealt</span><span class="s2">; }</span>
+    <span class="s0">public boolean </span><span class="s1">isLastActionFailed</span><span class="s2">() { </span><span class="s0">return </span><span class="s1">lastActionFailed</span><span class="s2">; }</span>
+    <span class="s0">public boolean </span><span class="s1">isLastActionWasRest</span><span class="s2">() { </span><span class="s0">return </span><span class="s1">lastActionWasRest</span><span class="s2">; }</span>
+    <span class="s0">public int </span><span class="s1">getLastHealAmount</span><span class="s2">() { </span><span class="s0">return </span><span class="s1">lastHealAmount</span><span class="s2">; }</span>
+
+    <span class="s4">// Raw attack name getters (for UI)</span>
+    <span class="s0">public </span><span class="s1">String getBasicAttackName</span><span class="s2">() {</span>
+        <span class="s0">if </span><span class="s2">(</span><span class="s1">basicAttack </span><span class="s2">== </span><span class="s0">null</span><span class="s2">) </span><span class="s0">return </span><span class="s5">&quot;Basic Attack&quot;</span><span class="s2">;</span>
+        <span class="s0">return </span><span class="s1">basicAttack</span><span class="s2">.</span><span class="s1">replaceAll</span><span class="s2">(</span><span class="s5">&quot;</span><span class="s0">\\</span><span class="s5">s*–.*&quot;</span><span class="s2">, </span><span class="s5">&quot;&quot;</span><span class="s2">).</span><span class="s1">trim</span><span class="s2">();</span>
+    <span class="s2">}</span>
+    <span class="s0">public </span><span class="s1">String getSkillAttackName</span><span class="s2">() {</span>
+        <span class="s0">if </span><span class="s2">(</span><span class="s1">skillAttack </span><span class="s2">== </span><span class="s0">null</span><span class="s2">) </span><span class="s0">return </span><span class="s5">&quot;Skill Attack&quot;</span><span class="s2">;</span>
+        <span class="s0">return </span><span class="s1">skillAttack</span><span class="s2">.</span><span class="s1">replaceAll</span><span class="s2">(</span><span class="s5">&quot;</span><span class="s0">\\</span><span class="s5">s*–.*&quot;</span><span class="s2">, </span><span class="s5">&quot;&quot;</span><span class="s2">).</span><span class="s1">trim</span><span class="s2">();</span>
+    <span class="s2">}</span>
+    <span class="s0">public </span><span class="s1">String getUltimateAttackName</span><span class="s2">() {</span>
+        <span class="s0">if </span><span class="s2">(</span><span class="s1">ultimateAttack </span><span class="s2">== </span><span class="s0">null</span><span class="s2">) </span><span class="s0">return </span><span class="s5">&quot;Ultimate&quot;</span><span class="s2">;</span>
+        <span class="s0">return </span><span class="s1">ultimateAttack</span><span class="s2">.</span><span class="s1">replaceAll</span><span class="s2">(</span><span class="s5">&quot;</span><span class="s0">\\</span><span class="s5">s*–.*&quot;</span><span class="s2">, </span><span class="s5">&quot;&quot;</span><span class="s2">).</span><span class="s1">trim</span><span class="s2">();</span>
+    <span class="s2">}</span>
+<span class="s2">}</span></pre>
+</body>
+</html>

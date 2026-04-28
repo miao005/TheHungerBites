@@ -1,0 +1,58 @@
+<html>
+<head>
+<title>AudioManager.java</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #cf8e6d;}
+.s1 { color: #bcbec4;}
+.s2 { color: #bcbec4;}
+.s3 { color: #7a7e85;}
+</style>
+</head>
+<body bgcolor="#191a1c">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+AudioManager.java</font>
+</center></td></tr></table>
+<pre><span class="s0">package </span><span class="s1">main</span><span class="s2">;</span>
+
+<span class="s0">import </span><span class="s1">javax</span><span class="s2">.</span><span class="s1">sound</span><span class="s2">.</span><span class="s1">sampled</span><span class="s2">.</span><span class="s1">AudioInputStream</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s1">javax</span><span class="s2">.</span><span class="s1">sound</span><span class="s2">.</span><span class="s1">sampled</span><span class="s2">.</span><span class="s1">AudioSystem</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s1">javax</span><span class="s2">.</span><span class="s1">sound</span><span class="s2">.</span><span class="s1">sampled</span><span class="s2">.</span><span class="s1">Clip</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s1">java</span><span class="s2">.</span><span class="s1">io</span><span class="s2">.</span><span class="s1">IOException</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s1">java</span><span class="s2">.</span><span class="s1">net</span><span class="s2">.</span><span class="s1">URL</span><span class="s2">;</span>
+
+<span class="s0">public class </span><span class="s1">AudioManager </span><span class="s2">{</span>
+    <span class="s0">private </span><span class="s1">Clip clip</span><span class="s2">;</span>
+
+    <span class="s0">public void </span><span class="s1">playMusic</span><span class="s2">(</span><span class="s1">String filePath</span><span class="s2">){</span>
+        <span class="s0">try </span><span class="s2">{</span>
+            <span class="s1">URL url </span><span class="s2">= </span><span class="s1">getClass</span><span class="s2">().</span><span class="s1">getResource</span><span class="s2">(</span><span class="s1">filePath</span><span class="s2">);</span>
+            <span class="s1">AudioInputStream audio </span><span class="s2">= </span><span class="s1">AudioSystem</span><span class="s2">.</span><span class="s1">getAudioInputStream</span><span class="s2">(</span><span class="s1">url</span><span class="s2">);</span>
+            <span class="s1">clip </span><span class="s2">= </span><span class="s1">AudioSystem</span><span class="s2">.</span><span class="s1">getClip</span><span class="s2">();</span>
+            <span class="s1">clip</span><span class="s2">.</span><span class="s1">open</span><span class="s2">(</span><span class="s1">audio</span><span class="s2">);</span>
+            <span class="s1">clip</span><span class="s2">.</span><span class="s1">loop</span><span class="s2">(</span><span class="s1">Clip</span><span class="s2">.</span><span class="s1">LOOP_CONTINUOUSLY</span><span class="s2">); </span><span class="s3">// loops forever</span>
+            <span class="s1">clip</span><span class="s2">.</span><span class="s1">start</span><span class="s2">();</span>
+        <span class="s2">} </span><span class="s0">catch </span><span class="s2">(</span><span class="s1">Exception e</span><span class="s2">) {</span>
+            <span class="s1">e</span><span class="s2">.</span><span class="s1">printStackTrace</span><span class="s2">();</span>
+        <span class="s2">}</span>
+    <span class="s2">}</span>
+
+    <span class="s0">public void </span><span class="s1">stopMusic</span><span class="s2">(){</span>
+        <span class="s0">if</span><span class="s2">(</span><span class="s1">clip </span><span class="s2">!= </span><span class="s0">null</span><span class="s2">)</span>
+            <span class="s1">clip</span><span class="s2">.</span><span class="s1">stop</span><span class="s2">();</span>
+    <span class="s2">}</span>
+
+    <span class="s0">public void </span><span class="s1">pauseMusic</span><span class="s2">(){</span>
+        <span class="s0">if</span><span class="s2">(</span><span class="s1">clip </span><span class="s2">!= </span><span class="s0">null</span><span class="s2">)</span>
+            <span class="s1">clip</span><span class="s2">.</span><span class="s1">stop</span><span class="s2">();</span>
+    <span class="s2">}</span>
+
+    <span class="s0">public void </span><span class="s1">resumeMusic</span><span class="s2">(){</span>
+        <span class="s0">if</span><span class="s2">(</span><span class="s1">clip </span><span class="s2">!= </span><span class="s0">null</span><span class="s2">)</span>
+            <span class="s1">clip</span><span class="s2">.</span><span class="s1">start</span><span class="s2">();</span>
+    <span class="s2">}</span>
+<span class="s2">}</span></pre>
+</body>
+</html>

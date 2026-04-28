@@ -1,0 +1,58 @@
+<html>
+<head>
+<title>BattleSystem.java</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #cf8e6d;}
+.s1 { color: #bcbec4;}
+.s2 { color: #bcbec4;}
+.s3 { color: #2aacb8;}
+.s4 { color: #7a7e85;}
+</style>
+</head>
+<body bgcolor="#191a1c">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+BattleSystem.java</font>
+</center></td></tr></table>
+<pre><span class="s0">package </span><span class="s1">main</span><span class="s2">;</span>
+
+<span class="s0">public class </span><span class="s1">BattleSystem </span><span class="s2">{</span>
+
+    <span class="s0">public void </span><span class="s1">executePlayerTurn</span><span class="s2">(</span><span class="s1">Character current</span><span class="s2">, </span><span class="s1">Character opponent</span><span class="s2">, </span><span class="s0">int </span><span class="s1">skillChoice</span><span class="s2">) {</span>
+        <span class="s1">current</span><span class="s2">.</span><span class="s1">regenerateMana</span><span class="s2">();</span>
+        <span class="s0">switch </span><span class="s2">(</span><span class="s1">skillChoice</span><span class="s2">) {</span>
+            <span class="s0">case </span><span class="s3">1</span><span class="s2">: </span><span class="s1">current</span><span class="s2">.</span><span class="s1">basicAttack</span><span class="s2">(</span><span class="s1">opponent</span><span class="s2">); </span><span class="s0">break</span><span class="s2">;</span>
+            <span class="s0">case </span><span class="s3">2</span><span class="s2">: </span><span class="s1">current</span><span class="s2">.</span><span class="s1">skillAttack</span><span class="s2">(</span><span class="s1">opponent</span><span class="s2">); </span><span class="s0">break</span><span class="s2">;</span>
+            <span class="s0">case </span><span class="s3">3</span><span class="s2">: </span><span class="s1">current</span><span class="s2">.</span><span class="s1">ultimateAttack</span><span class="s2">(</span><span class="s1">opponent</span><span class="s2">); </span><span class="s0">break</span><span class="s2">;</span>
+            <span class="s0">case </span><span class="s3">4</span><span class="s2">: </span><span class="s1">current</span><span class="s2">.</span><span class="s1">rest</span><span class="s2">(</span><span class="s1">current</span><span class="s2">); </span><span class="s0">break</span><span class="s2">;</span>
+        <span class="s2">}</span>
+    <span class="s2">}</span>
+
+    <span class="s0">public boolean </span><span class="s1">isBattleOver</span><span class="s2">(</span><span class="s1">Character p1</span><span class="s2">, </span><span class="s1">Character p2</span><span class="s2">) {</span>
+        <span class="s0">return </span><span class="s2">!</span><span class="s1">p1</span><span class="s2">.</span><span class="s1">isAlive</span><span class="s2">() || !</span><span class="s1">p2</span><span class="s2">.</span><span class="s1">isAlive</span><span class="s2">();</span>
+    <span class="s2">}</span>
+
+    <span class="s0">public </span><span class="s1">Character getWinner</span><span class="s2">(</span><span class="s1">Character p1</span><span class="s2">, </span><span class="s1">Character p2</span><span class="s2">) {</span>
+        <span class="s0">if </span><span class="s2">(</span><span class="s1">p1</span><span class="s2">.</span><span class="s1">isAlive</span><span class="s2">() &amp;&amp; !</span><span class="s1">p2</span><span class="s2">.</span><span class="s1">isAlive</span><span class="s2">()) </span><span class="s0">return </span><span class="s1">p1</span><span class="s2">;</span>
+        <span class="s0">if </span><span class="s2">(!</span><span class="s1">p1</span><span class="s2">.</span><span class="s1">isAlive</span><span class="s2">() &amp;&amp; </span><span class="s1">p2</span><span class="s2">.</span><span class="s1">isAlive</span><span class="s2">()) </span><span class="s0">return </span><span class="s1">p2</span><span class="s2">;</span>
+        <span class="s0">return null</span><span class="s2">;</span>
+    <span class="s2">}</span>
+
+
+    <span class="s0">public int </span><span class="s1">getAiSkillChoice</span><span class="s2">(</span><span class="s1">Character ai</span><span class="s2">) {</span>
+        <span class="s0">double </span><span class="s1">roll </span><span class="s2">= </span><span class="s1">Math</span><span class="s2">.</span><span class="s1">random</span><span class="s2">();</span>
+        <span class="s0">if </span><span class="s2">(</span><span class="s1">roll </span><span class="s2">&lt; </span><span class="s3">0.10 </span><span class="s2">&amp;&amp; </span><span class="s1">ai</span><span class="s2">.</span><span class="s1">getHealth</span><span class="s2">() &lt; </span><span class="s1">ai</span><span class="s2">.</span><span class="s1">getMaxHealth</span><span class="s2">() * </span><span class="s3">0.4</span><span class="s2">) {</span>
+            <span class="s0">return </span><span class="s3">4</span><span class="s2">; </span><span class="s4">// rest when low HP</span>
+        <span class="s2">} </span><span class="s0">else if </span><span class="s2">(</span><span class="s1">roll </span><span class="s2">&lt; </span><span class="s3">0.25 </span><span class="s2">&amp;&amp; </span><span class="s1">ai</span><span class="s2">.</span><span class="s1">getCurrentMana</span><span class="s2">() &gt;= </span><span class="s3">50</span><span class="s2">) {</span>
+            <span class="s0">return </span><span class="s3">3</span><span class="s2">; </span><span class="s4">// ultimate</span>
+        <span class="s2">} </span><span class="s0">else if </span><span class="s2">(</span><span class="s1">roll </span><span class="s2">&lt; </span><span class="s3">0.60 </span><span class="s2">&amp;&amp; </span><span class="s1">ai</span><span class="s2">.</span><span class="s1">getCurrentMana</span><span class="s2">() &gt;= </span><span class="s3">30</span><span class="s2">) {</span>
+            <span class="s0">return </span><span class="s3">2</span><span class="s2">; </span><span class="s4">// skill</span>
+        <span class="s2">} </span><span class="s0">else </span><span class="s2">{</span>
+            <span class="s0">return </span><span class="s3">1</span><span class="s2">; </span><span class="s4">// basic</span>
+        <span class="s2">}</span>
+    <span class="s2">}</span>
+<span class="s2">}</span></pre>
+</body>
+</html>
