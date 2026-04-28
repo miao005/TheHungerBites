@@ -77,7 +77,7 @@ public class CharacterManager {
             case "jollibee": return "Geoffred's pick, Jollibee";
             case "ronald mcdonald": return "Jandyll's pick, Ronald McDonald";
             case "burger king": return "Kimjie's pick, The Burger King";
-            case "julie's": return "Louella's pick, Julie's the Baker";
+            case "julie's": return "Jennifer's pick, Julie's the Baker";
             case "poco": return "Keeia's favourite, Poco the Potato";
             case "colonel sanders": return "The Colonel's Revenge";
             case "taco bell": return "Taco Bell, Spice Master";

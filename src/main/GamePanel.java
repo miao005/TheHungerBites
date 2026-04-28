@@ -25,6 +25,7 @@ public class GamePanel extends JPanel {
      * (PVP, PvAI, or one Arcade bout against a single opponent).
      */
     private MatchManager matchManager;
+    private AudioManager audioManager;
 
     // Screens
     private StartScreen startScreen;
@@ -50,6 +51,7 @@ public class GamePanel extends JPanel {
         characterManager = new CharacterManager();
         battleSystem     = new BattleSystem();
         matchManager     = new MatchManager();
+        audioManager = new AudioManager();
 
         mouseInputs = new MouseInputs(this);
         addMouseListener(mouseInputs);
@@ -62,6 +64,7 @@ public class GamePanel extends JPanel {
         arcadeRewardScreen    = new ArcadeRewardScreen(this);
         gameOverScreen        = new GameOverScreen(this);
         roundCutscene         = new RoundCutscene(this);
+
     }
 
     // ═════════════════════════════════════════════════════════════════
@@ -238,6 +241,21 @@ public class GamePanel extends JPanel {
     public GameState getGameState()  { return gameState; }
     public void setGameState(GameState gameState) {
         this.gameState = gameState;
+        switch(gameState) {
+
+            case MENU:
+                audioManager.stopMusic();
+                audioManager.playMusic("/resources/Music/menu_music.wav");
+                break;
+            case BATTLE:
+                audioManager.stopMusic();
+                audioManager.playMusic("/resources/Music/battle_music.wav");
+                break;
+            case GAME_OVER:
+                audioManager.stopMusic();
+                audioManager.playMusic("/resources/Music/gameover_music.wav");
+                break;
+        }
         repaint();
     }
 

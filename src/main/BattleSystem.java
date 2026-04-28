@@ -22,7 +22,7 @@ public class BattleSystem {
         return null;
     }
 
-    /** Simple AI: prefers skill/ultimate when mana allows, else basic, occasionally rests */
+
     public int getAiSkillChoice(Character ai) {
         double roll = Math.random();
         if (roll < 0.10 && ai.getHealth() < ai.getMaxHealth() * 0.4) {
