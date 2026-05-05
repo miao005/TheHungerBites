@@ -16,26 +16,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * BattleScreen — Pokemon-style layout with animated GIF support
- *
- * GIF animations use JLabel + ImageIcon (Swing animates GIFs natively).
- * Two JLabels are overlaid on the GamePanel:
- *   - attackerLabel : plays attacker's attack GIF (left or right side)
- *   - defenderLabel : plays defender's hit GIF
- *
- * File naming convention (place in /resources/gifs/):
- *   <CharClassName>_basic.gif
- *   <CharClassName>_skill.gif
- *   <CharClassName>_ultimate.gif
- *   <CharClassName>_hit.gif
- *
- * Layout:
- *   TOP    : HP bars with portrait icons
- *   MIDDLE : Battle background + sprites (player left, enemy right+flipped)
- *   BOTTOM : Log box (left) | 4 attack buttons 2x2 (right)
- *            Red=Basic  Green=Skill  Yellow=Ultimate  Blue=Rest
- */
+
 public class BattleScreen {
 
     // ── Round starter indicator ───────────────────────────────────────────

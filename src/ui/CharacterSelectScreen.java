@@ -6,8 +6,10 @@ import main.GamePanel;
 import main.GameState;
 
 import javax.imageio.ImageIO;
+import javax.swing.ImageIcon;
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -22,6 +24,7 @@ public class CharacterSelectScreen {
 
     // Character sprites
     private Map<String, BufferedImage> sprites = new HashMap<>();
+    private Map<String, ImageIcon> animatedSprites = new HashMap<>();
 
     //Font
     private Font pixelFont;
@@ -77,8 +80,17 @@ public class CharacterSelectScreen {
                 "TacoBell","Wendys","Poco","Julies"
         };
         for (String n : names) {
-            BufferedImage img = tryLoad("/resources/sprites/" + n + ".png");
-            if (img != null) sprites.put(n, img);
+            // Try animated GIF sprite first
+            URL gifUrl = getClass().getResource("/resources/sprites/" + n + "_sprite.gif");
+            if (gifUrl != null) {
+                ImageIcon icon = new ImageIcon(gifUrl);
+                icon.setImageObserver(gamePanel);
+                animatedSprites.put(n, icon);
+            } else {
+                // Fall back to static PNG
+                BufferedImage img = tryLoad("/resources/sprites/" + n + ".png");
+                if (img != null) sprites.put(n, img);
+            }
         }
     }
 
@@ -97,15 +109,17 @@ public class CharacterSelectScreen {
 
         int currentIndex = selectingP1 ? p1Index : p2Index;
         Character ch = characterManager.createCharacter(currentIndex);
+        String key = ch.getName().replaceAll("[^a-zA-Z]", "");
+        ImageIcon animIcon = animatedSprites.get(key);
 
-        // ──  Background ─────────────────────────────────────────────
+        // ──  Background (PNG shell — always) ────────────────────────
         if (background != null) {
             g2d.drawImage(background, 0, 0, width, height, null);
         } else {
             drawFallbackBackground(g2d, width, height);
         }
 
-        // ──  Player label ───────────────────────────────────────────
+        // ──  Player label ────────────────────────────────────────────
         boolean isPvp = gamePanel.getGameMode().equals("PVP");
         String playerLabel = selectingP1 ? "PLAYER 1" : (isPvp ? "PLAYER 2" : "PLAYER 1");
         g2d.setFont(pixelFont.deriveFont((float) sf(width, 20)));
@@ -115,47 +129,63 @@ public class CharacterSelectScreen {
                 (width - fm.stringWidth(playerLabel)) / 2,
                 (int)(height * 0.09));
 
-        // ──  Character sprite ───────────────────────────────────────
-        int spriteSize = (int)(height * 0.135);
-        int spriteX    = (int)(width  * 0.19);
-        int spriteY    = (int)(height * 0.115);
-        String key = ch.getName().replaceAll("[^a-zA-Z]", "");
-        BufferedImage sprite = sprites.get(key);
-        if (sprite != null) {
-            g2d.drawImage(sprite, spriteX, spriteY, spriteSize, spriteSize, null);
+        // ──  Character sprite (GIF or static PNG) ────────────────────
+        // Pedestal center X = 0.1622, top = 0.7611
+        // Sprite should sit on pedestal — bottom of sprite = pedestal top
+        int spriteH  = (int)(height * 0.52);
+        int spriteW  = spriteH;  // square aspect
+        int pedestalCenterX = (int)(width * 0.23);
+        int pedestalTopY    = (int)(height * 0.761);
+        int spriteX  = pedestalCenterX - spriteW / 2;
+        int spriteY  = pedestalTopY - spriteH;
+        if (animIcon != null) {
+            g2d.drawImage(animIcon.getImage(), spriteX, spriteY, spriteW, spriteH, gamePanel);
         } else {
-            // Placeholder circle
-            g2d.setColor(new Color(255, 200, 100, 200));
-            g2d.fillOval(spriteX, spriteY, spriteSize, spriteSize);
-            g2d.setColor(Color.WHITE);
-            g2d.setFont(new Font("Monospaced", Font.BOLD, sf(width, 10)));
-            g2d.drawString("?", spriteX + spriteSize / 2 - 4, spriteY + spriteSize / 2 + 4);
+            BufferedImage sprite = sprites.get(key);
+            if (sprite != null) {
+                g2d.drawImage(sprite, spriteX, spriteY, spriteW, spriteH, null);
+            } else {
+                g2d.setColor(new Color(255, 200, 100, 200));
+                g2d.fillOval(spriteX, spriteY, spriteW, spriteH);
+                g2d.setColor(Color.WHITE);
+                g2d.setFont(new Font("Monospaced", Font.BOLD, sf(width, 10)));
+                g2d.drawString("?", spriteX + spriteW / 2 - 4, spriteY + spriteH / 2 + 4);
+            }
         }
 
-        // ──  Character name ─────────────────────────────────────────
-        g2d.setFont(pixelFont.deriveFont((float) sf(width, 20)));
+        // ──  Character name — centered in pink header, white ─────────
+        // Header spans x: 0.3964–0.8531, y mid: 0.2796
+        g2d.setFont(pixelFont.deriveFont((float) sf(width, 18)));
         g2d.setColor(Color.WHITE);
         fm = g2d.getFontMetrics();
-        String charName = ch.getName().toUpperCase();
-        int nameAreaL   = (int)(width * 0.25);
-        int nameAreaW   = (int)(width * 0.50);
+        String charName  = ch.getName().toUpperCase();
+        int panelLeft    = (int)(width * 0.3964);
+        int panelRight   = (int)(width * 0.8531);
+        int panelW       = panelRight - panelLeft;
         g2d.drawString(charName,
-                nameAreaL + (nameAreaW - fm.stringWidth(charName)) / 2,
-                (int)(height * 0.215));
+                panelLeft + (panelW - fm.stringWidth(charName)) / 2,
+                (int)(height * 0.295));
 
-        // ──  Lore text ──────────────────────────────────────────────
-        g2d.setFont(new Font("Monospaced", Font.BOLD, sf(width, 9)));
+        // ──  Lore text — inside left cream cell ──────────────────────
+        // Lore cell: x 0.3964–0.6151, y 0.3389–0.7444
+        // Add inner padding
+        int lorePad  = (int)(width * 0.012);
+        int loreX    = panelLeft + lorePad;
+        int loreTopY = (int)(height * 0.4);
+        int loreW    = (int)(width * 0.6151) - panelLeft - lorePad * 2;
+        int loreH    = (int)(height * 0.7) - loreTopY;
+        g2d.setFont(new Font("Monospaced", Font.BOLD, sf(width, 6)));
         g2d.setColor(new Color(30, 20, 60));
-        drawWrappedText(g2d, ch.getBackstory(),
-                (int)(width  * 0.200), (int)(height * 0.40),
-                (int)(width  * 0.290), (int)(height * 0.46));
+        drawWrappedText(g2d, ch.getBackstory(), loreX, loreTopY, loreW, loreH);
 
-        // ──  Skills text ────────────────────────────────────────────
-        int sx  = (int)(width  * 0.515);
-        int sy  = (int)(height * 0.40);
-        int sw  = (int)(width  * 0.295);
-        int sh  = (int)(height * 0.46);
-        int gap = (int)(sh * 0.25);
+        // ──  Skills text — inside right cream cell ───────────────────
+        // Skills cell: x 0.6151–0.8531, y 0.3389–0.7444
+        int skillPad = (int)(width * 0.012);
+        int sx       = (int)(width * 0.6151) + skillPad;
+        int sy       = loreTopY;
+        int sw       = panelRight - (int)(width * 0.6151) - skillPad * 2;
+        int sh       = loreH;
+        int gap      = (int)(sh * 0.35);
 
         drawSkillBlock(g2d,
                 "BASIC ATTACK: " + ch.getBasicAttackName(),
@@ -259,12 +289,12 @@ public class CharacterSelectScreen {
     // ── Skill block ───────────────────────────────────────────────────
     private void drawSkillBlock(Graphics2D g2d, String title, String details,
                                 int x, int y, int maxW, int screenW) {
+        g2d.setFont(new Font("Monospaced", Font.BOLD, sf(screenW, 6)));
         int lh = g2d.getFontMetrics().getHeight();
-        g2d.setFont(new Font("Monospaced", Font.BOLD, sf(screenW, 9)));
         g2d.setColor(new Color(50, 0, 70));
         drawWrappedText(g2d, title, x, y, maxW, lh * 2);
 
-        g2d.setFont(new Font("Monospaced", Font.PLAIN, sf(screenW, 9)));
+        g2d.setFont(new Font("Monospaced", Font.PLAIN, sf(screenW, 6)));
         g2d.setColor(new Color(60, 40, 80));
         String[] parts = details.split("  ");
         for (int i = 0; i < parts.length; i++)
