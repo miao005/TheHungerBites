@@ -16,7 +16,26 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-
+/**
+ * BattleScreen — Pokemon-style layout with animated GIF support
+ *
+ * GIF animations use JLabel + ImageIcon (Swing animates GIFs natively).
+ * Two JLabels are overlaid on the GamePanel:
+ *   - attackerLabel : plays attacker's attack GIF (left or right side)
+ *   - defenderLabel : plays defender's hit GIF
+ *
+ * File naming convention (place in /resources/gifs/):
+ *   <CharClassName>_basic.gif
+ *   <CharClassName>_skill.gif
+ *   <CharClassName>_ultimate.gif
+ *   <CharClassName>_hit.gif
+ *
+ * Layout:
+ *   TOP    : HP bars with portrait icons
+ *   MIDDLE : Battle background + sprites (player left, enemy right+flipped)
+ *   BOTTOM : Log box (left) | 4 attack buttons 2x2 (right)
+ *            Red=Basic  Green=Skill  Yellow=Ultimate  Blue=Rest
+ */
 public class BattleScreen {
 
     // ── Round starter indicator ───────────────────────────────────────────
@@ -35,11 +54,16 @@ public class BattleScreen {
     private BufferedImage btnBasicImg, btnSkillImg, btnUltimateImg, btnRestImg;
     private Map<String, BufferedImage> sprites    = new HashMap<>();
     private Map<String, URL>           gifUrls    = new HashMap<>(); // GIF URLs for ImageIcon
+    private Map<String, ImageIcon>     idleIcons  = new HashMap<>(); // cached idle GIF icons
     private Font pixelFont;
 
     // ── GIF animation overlay labels ──────────────────────────────────
-    private JLabel attackerLabel;
-    private JLabel defenderLabel;
+    // Animation state (drawn directly so we can flip)
+    private ImageIcon attackerIcon;
+    private ImageIcon defenderIcon;
+    private int attackerAnimX, attackerAnimY, attackerAnimW, attackerAnimH;
+    private int defenderAnimX, defenderAnimY, defenderAnimW, defenderAnimH;
+    private boolean attackerFlip, defenderFlip;
     private boolean animationPlaying = false;
 
     // ── Battle state ──────────────────────────────────────────────────
@@ -203,7 +227,7 @@ public class BattleScreen {
         btnUltimateImg = tryLoadImage("/resources/btn_ultimate.png");
         btnRestImg    = tryLoadImage("/resources/btn_rest.png");
 
-        // Character sprites (static PNG for idle)
+        // Character sprites (static PNG for idle fallback)
         String[] charNames = {"Jollibee","RonaldMcDonald","BurgerKing","ColonelSanders",
                 "TacoBell","Wendys","Poco","Julies"};
         for (String n : charNames) {
@@ -211,13 +235,20 @@ public class BattleScreen {
             if (img != null) sprites.put(n, img);
         }
 
-        // GIF URLs — stored as URLs so ImageIcon can animate them
-        String[] suffixes = {"_basic","_skill","_ultimate","_hit"};
+        // GIF URLs - idle + attack animations, all in per-character folders
+        String[] suffixes = {"_idle","_basic","_skill","_ultimate","_hit"};
         for (String n : charNames) {
             for (String s : suffixes) {
-                String path = "/resources/gifs/" + n + s + ".gif";
+                String path = "/resources/sprites/" + n + "/" + n + s + ".gif";
                 URL url = getClass().getResource(path);
                 if (url != null) gifUrls.put(n + s, url);
+            }
+            // Cache idle icon so it animates continuously without resetting
+            URL idleUrl = gifUrls.get(n + "_idle");
+            if (idleUrl != null) {
+                ImageIcon icon = new ImageIcon(idleUrl);
+                icon.setImageObserver(gamePanel);
+                idleIcons.put(n, icon);
             }
         }
     }
@@ -232,24 +263,10 @@ public class BattleScreen {
         return null;
     }
 
-    // ── GIF overlay labels ────────────────────────────────────────────
+    // ── GIF animation setup ───────────────────────────────────────────
     private void setupAnimationLabels() {
-        attackerLabel = new JLabel();
-        attackerLabel.setVisible(false);
-        attackerLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        attackerLabel.setVerticalAlignment(SwingConstants.CENTER);
-
-        defenderLabel = new JLabel();
-        defenderLabel.setVisible(false);
-        defenderLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        defenderLabel.setVerticalAlignment(SwingConstants.CENTER);
-
-        // Add to panel after it's set up (called from GamePanel)
-        SwingUtilities.invokeLater(() -> {
-            gamePanel.setLayout(null); // absolute positioning
-            gamePanel.add(attackerLabel);
-            gamePanel.add(defenderLabel);
-        });
+        attackerIcon = null;
+        defenderIcon = null;
     }
 
     // ── Start battle ──────────────────────────────────────────────────
@@ -291,9 +308,19 @@ public class BattleScreen {
         // 1. Battle background
         drawBattleBackground(g2d, width, battleH);
 
-        // 2. Sprites (idle — hidden during GIF animation)
+        // 2. Sprites (idle) or attack GIF animations
         if (!animationPlaying) {
             drawSprites(g2d, width);
+        } else {
+            // Draw attack/hit GIFs with flipping support
+            if (attackerIcon != null) {
+                drawGif(g2d, attackerIcon, attackerAnimX, attackerAnimY,
+                        attackerAnimW, attackerAnimH, attackerFlip);
+            }
+            if (defenderIcon != null) {
+                drawGif(g2d, defenderIcon, defenderAnimX, defenderAnimY,
+                        defenderAnimW, defenderAnimH, defenderFlip);
+            }
         }
 
         // 3. HP bars
@@ -363,7 +390,7 @@ public class BattleScreen {
         int p1Y = groundY - spriteH;
         drawIdleSprite(g2d, player1, p1X, p1Y, spriteW, spriteH, false);
 
-        int p2X = (int)(width * 0.62);
+        int p2X = (int)(width * 0.50);
         int p2Y = groundY - spriteH;
         drawIdleSprite(g2d, player2, p2X, p2Y, spriteW, spriteH, true);
     }
@@ -371,27 +398,33 @@ public class BattleScreen {
     private void drawIdleSprite(Graphics2D g2d, Character ch,
                                 int x, int y, int w, int h, boolean flip) {
         String key = getSpriteKey(ch);
-        BufferedImage sprite = sprites.get(key);
 
-        if (sprite != null) {
-            if (flip) {
-                g2d.drawImage(sprite,
-                        x + w, y, x, y + h,
-                        0, 0, sprite.getWidth(), sprite.getHeight(), null);
-            } else {
-                g2d.drawImage(sprite, x, y, w, h, null);
-            }
+        // Use animated idle GIF if available (use cached icon)
+        ImageIcon idleIcon = idleIcons.get(key);
+        if (idleIcon != null) {
+            drawGif(g2d, idleIcon, x, y, w, h, flip);
         } else {
-            // Placeholder
-            g2d.setColor(flip ? new Color(200,80,80,180) : new Color(80,120,200,180));
-            g2d.fillRoundRect(x + w/4, y + h/6, w/2, h*5/6, 12, 12);
-            g2d.fillOval(x + w/3, y, w/3, w/3);
-            g2d.setFont(pixelFont.deriveFont((float) Math.max(7, w/8)));
-            g2d.setColor(Color.WHITE);
-            FontMetrics fm = g2d.getFontMetrics();
-            String label = ch.getName().length() > 6 ? ch.getName().substring(0,6) : ch.getName();
-            g2d.drawString(label, x + (w - fm.stringWidth(label))/2, y + h/2);
-        }
+            BufferedImage sprite = sprites.get(key);
+            if (sprite != null) {
+                if (flip) {
+                    g2d.drawImage(sprite,
+                            x + w, y, x, y + h,
+                            0, 0, sprite.getWidth(), sprite.getHeight(), null);
+                } else {
+                    g2d.drawImage(sprite, x, y, w, h, null);
+                }
+            } else {
+                // Placeholder
+                g2d.setColor(flip ? new Color(200,80,80,180) : new Color(80,120,200,180));
+                g2d.fillRoundRect(x + w/4, y + h/6, w/2, h*5/6, 12, 12);
+                g2d.fillOval(x + w/3, y, w/3, w/3);
+                g2d.setFont(pixelFont.deriveFont((float) Math.max(7, w/8)));
+                g2d.setColor(Color.WHITE);
+                FontMetrics fm = g2d.getFontMetrics();
+                String label = ch.getName().length() > 6 ? ch.getName().substring(0,6) : ch.getName();
+                g2d.drawString(label, x + (w - fm.stringWidth(label))/2, y + h/2);
+            }
+        } // end static sprite fallback
 
         if (!ch.isAlive()) {
             g2d.setColor(new Color(0,0,0,120));
@@ -399,6 +432,21 @@ public class BattleScreen {
             g2d.setFont(pixelFont.deriveFont((float) sf(w, 18)));
             g2d.setColor(new Color(255,60,60));
             g2d.drawString("K.O.", x + w/2 - 20, y + h/2);
+        }
+    }
+
+    // ── Draw GIF with optional horizontal flip ───────────────────────
+    private void drawGif(Graphics2D g2d, ImageIcon icon,
+                         int x, int y, int w, int h, boolean flip) {
+        if (flip) {
+            // Use AffineTransform to mirror — works for animated GIFs unlike swapped coords
+            java.awt.geom.AffineTransform old = g2d.getTransform();
+            g2d.translate(x + w, y);
+            g2d.scale(-1, 1);
+            g2d.drawImage(icon.getImage(), 0, 0, w, h, gamePanel);
+            g2d.setTransform(old);
+        } else {
+            g2d.drawImage(icon.getImage(), x, y, w, h, gamePanel);
         }
     }
 
@@ -769,15 +817,19 @@ public class BattleScreen {
             animationPlaying = true;
 
             if (attackerGif != null) {
-                attackerLabel.setIcon(new ImageIcon(attackerGif));
-                attackerLabel.setBounds(attackerX, spriteY, spriteW, spriteH);
-                attackerLabel.setVisible(true);
+                attackerIcon = new ImageIcon(attackerGif);
+                attackerIcon.setImageObserver(gamePanel);
+                attackerAnimX = attackerX; attackerAnimY = spriteY;
+                attackerAnimW = spriteW;   attackerAnimH = spriteH;
+                attackerFlip  = !attackerIsP1; // right-side attacker faces left
             }
 
             if (defenderGif != null) {
-                defenderLabel.setIcon(new ImageIcon(defenderGif));
-                defenderLabel.setBounds(defenderX, spriteY, spriteW, spriteH);
-                defenderLabel.setVisible(true);
+                defenderIcon = new ImageIcon(defenderGif);
+                defenderIcon.setImageObserver(gamePanel);
+                defenderAnimX = defenderX; defenderAnimY = spriteY;
+                defenderAnimW = spriteW;   defenderAnimH = spriteH;
+                defenderFlip  = attackerIsP1; // defender on right faces left
             }
 
             gamePanel.repaint();
@@ -791,8 +843,8 @@ public class BattleScreen {
     }
 
     private void hideAnimations() {
-        attackerLabel.setVisible(false);
-        defenderLabel.setVisible(false);
+        attackerIcon = null;
+        defenderIcon = null;
         animationPlaying = false;
         gamePanel.repaint();
     }

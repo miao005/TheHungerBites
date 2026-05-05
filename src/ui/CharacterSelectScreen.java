@@ -81,7 +81,7 @@ public class CharacterSelectScreen {
         };
         for (String n : names) {
             // Try animated GIF sprite first
-            URL gifUrl = getClass().getResource("/resources/sprites/" + n + "_sprite.gif");
+            URL gifUrl = getClass().getResource("/resources/sprites/" + n + "/" + n + "_idle.gif");
             if (gifUrl != null) {
                 ImageIcon icon = new ImageIcon(gifUrl);
                 icon.setImageObserver(gamePanel);
@@ -134,7 +134,7 @@ public class CharacterSelectScreen {
         // Sprite should sit on pedestal — bottom of sprite = pedestal top
         int spriteH  = (int)(height * 0.52);
         int spriteW  = spriteH;  // square aspect
-        int pedestalCenterX = (int)(width * 0.23);
+        int pedestalCenterX = (int)(width * 0.1622);
         int pedestalTopY    = (int)(height * 0.761);
         int spriteX  = pedestalCenterX - spriteW / 2;
         int spriteY  = pedestalTopY - spriteH;
@@ -155,7 +155,7 @@ public class CharacterSelectScreen {
 
         // ──  Character name — centered in pink header, white ─────────
         // Header spans x: 0.3964–0.8531, y mid: 0.2796
-        g2d.setFont(pixelFont.deriveFont((float) sf(width, 18)));
+        g2d.setFont(pixelFont.deriveFont((float) sf(width, 20)));
         g2d.setColor(Color.WHITE);
         fm = g2d.getFontMetrics();
         String charName  = ch.getName().toUpperCase();
@@ -171,10 +171,10 @@ public class CharacterSelectScreen {
         // Add inner padding
         int lorePad  = (int)(width * 0.012);
         int loreX    = panelLeft + lorePad;
-        int loreTopY = (int)(height * 0.4);
+        int loreTopY = (int)(height * 0.375);
         int loreW    = (int)(width * 0.6151) - panelLeft - lorePad * 2;
-        int loreH    = (int)(height * 0.7) - loreTopY;
-        g2d.setFont(new Font("Monospaced", Font.BOLD, sf(width, 6)));
+        int loreH    = (int)(height * 0.7444) - loreTopY;
+        g2d.setFont(new Font("Monospaced", Font.BOLD, sf(width, 8)));
         g2d.setColor(new Color(30, 20, 60));
         drawWrappedText(g2d, ch.getBackstory(), loreX, loreTopY, loreW, loreH);
 
@@ -185,7 +185,7 @@ public class CharacterSelectScreen {
         int sy       = loreTopY;
         int sw       = panelRight - (int)(width * 0.6151) - skillPad * 2;
         int sh       = loreH;
-        int gap      = (int)(sh * 0.35);
+        int gap      = (int)(sh * 0.32);
 
         drawSkillBlock(g2d,
                 "BASIC ATTACK: " + ch.getBasicAttackName(),
@@ -289,12 +289,12 @@ public class CharacterSelectScreen {
     // ── Skill block ───────────────────────────────────────────────────
     private void drawSkillBlock(Graphics2D g2d, String title, String details,
                                 int x, int y, int maxW, int screenW) {
-        g2d.setFont(new Font("Monospaced", Font.BOLD, sf(screenW, 6)));
         int lh = g2d.getFontMetrics().getHeight();
+        g2d.setFont(new Font("Monospaced", Font.BOLD, sf(screenW, 9)));
         g2d.setColor(new Color(50, 0, 70));
         drawWrappedText(g2d, title, x, y, maxW, lh * 2);
 
-        g2d.setFont(new Font("Monospaced", Font.PLAIN, sf(screenW, 6)));
+        g2d.setFont(new Font("Monospaced", Font.PLAIN, sf(screenW, 9)));
         g2d.setColor(new Color(60, 40, 80));
         String[] parts = details.split("  ");
         for (int i = 0; i < parts.length; i++)
