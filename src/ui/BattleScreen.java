@@ -4,6 +4,7 @@ import main.BattleSystem;
 import main.Character;
 import main.GamePanel;
 import main.MatchManager;
+import main.GameState;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -15,6 +16,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 
 /**
  * BattleScreen — Pokemon-style layout with animated GIF support
@@ -93,6 +95,9 @@ public class BattleScreen {
 
     // ── Layout constants (recalculated each draw) ─────────────────────
     private int hpBarH, battleAreaY, battleH, bottomY, bottomH;
+
+    // - BUtton for settings
+    private Rectangle battleSettingsBtn, battleLeaderboardBtn;
 
     public BattleScreen(GamePanel gamePanel) {
         this.gamePanel    = gamePanel;
@@ -552,6 +557,31 @@ public class BattleScreen {
                 g2d.setStroke(new BasicStroke(1));
             }
         }
+
+        // Nav buttons centred below the pips
+        int btnSize = Math.max(12, (int)(hpH * 0.28));
+        int btnPad  = (int)(btnSize * 0.4);
+        int btnY    = cy + pipR + (int)(hpH * 0.08);
+
+        battleSettingsBtn    = new Rectangle(cx + btnPad / 2,              btnY, btnSize, btnSize);
+        battleLeaderboardBtn = new Rectangle(cx - btnPad / 2 - btnSize,    btnY, btnSize, btnSize);
+
+        drawNavBtn(g2d, battleSettingsBtn,    "S");
+        drawNavBtn(g2d, battleLeaderboardBtn, "L");
+    }
+
+    private void drawNavBtn(Graphics2D g2d, Rectangle r, String label) {
+        g2d.setColor(new Color(40, 40, 80, 200));
+        g2d.fillRoundRect(r.x, r.y, r.width, r.height, 4, 4);
+        g2d.setColor(new Color(180, 160, 255, 180));
+        g2d.setStroke(new BasicStroke(1f));
+        g2d.drawRoundRect(r.x, r.y, r.width, r.height, 4, 4);
+        g2d.setFont(new Font("Monospaced", Font.BOLD, Math.max(7, r.height / 2)));
+        FontMetrics fm = g2d.getFontMetrics();
+        g2d.setColor(Color.WHITE);
+        g2d.drawString(label,
+                r.x + (r.width  - fm.stringWidth(label)) / 2,
+                r.y + (r.height + fm.getAscent() - fm.getDescent()) / 2);
     }
 
     private void drawPortrait(Graphics2D g2d, Character ch,
@@ -852,6 +882,14 @@ public class BattleScreen {
 
     // ── Execute action ────────────────────────────────────────────────
     public void mouseClicked(int mx, int my) {
+        if (battleSettingsBtn != null && battleSettingsBtn.contains(mx, my)) {
+            gamePanel.setGameState(GameState.SETTINGS);
+            return;
+        }
+        if (battleLeaderboardBtn != null && battleLeaderboardBtn.contains(mx, my)) {
+            gamePanel.setGameState(GameState.LEADERBOARD);
+            return;
+        }
         if (!waitingForInput || battleOver || animationPlaying) return;
         int choice = -1;
         if      (btnBasic    != null && btnBasic.contains(mx,my))    choice = 1;

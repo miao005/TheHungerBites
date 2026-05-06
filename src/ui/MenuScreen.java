@@ -15,6 +15,7 @@ public class MenuScreen {
     private Rectangle pvpBounds;
     private Rectangle pvAiBounds;
     private Rectangle arcadeBounds;
+    private Rectangle settingsBounds, leaderboardBounds;
     private int hoveredIndex = -1;
 
     // ----- END OF CUSTOMIZATION SECTION -----
@@ -56,15 +57,20 @@ public class MenuScreen {
         int pvaiY   = (int)(height * 0.58);
         int arcadeY = (int)(height * 0.69);
 
+
+
         // Update bounds so click detection stays accurate
         pvpBounds    = new Rectangle(buttonX, pvpY,    buttonWidth, buttonHeight);
         pvAiBounds   = new Rectangle(buttonX, pvaiY,   buttonWidth, buttonHeight);
         arcadeBounds = new Rectangle(buttonX, arcadeY, buttonWidth, buttonHeight);
 
+
+
         // Draw buttons
         drawButton(g, pvpBounds,    btnPVP,    "PVP",    hoveredIndex == 0);
         drawButton(g, pvAiBounds,   btnPVAI,   "P V AI", hoveredIndex == 1);
         drawButton(g, arcadeBounds, btnArcade, "ARCADE", hoveredIndex == 2);
+        NavButtons.draw((Graphics2D) g, width, height);
     }
 
     private void drawButton(Graphics g, Rectangle bounds, BufferedImage buttonImage, String text, boolean isHovered) {
@@ -107,6 +113,7 @@ public class MenuScreen {
     }
 
     public void mouseClicked(int mouseX, int mouseY) {
+        if (NavButtons.handleClick(mouseX, mouseY, gamePanel)) return;
         if (pvpBounds == null) return;
 
         System.out.println("Click at: (" + mouseX + ", " + mouseY + ")");
@@ -129,6 +136,12 @@ public class MenuScreen {
             gamePanel.getCharacterSelectScreen().reset();
             gamePanel.setGameState(GameState.CHARACTER_SELECT);
             System.out.println("Selected: ARCADE Mode");
+        } else if (settingsBounds.contains(mouseX, mouseY)) {
+            gamePanel.getAudioManager().playSFX("/resources/Music/click.wav");
+            gamePanel.setGameState(GameState.SETTINGS);
+        } else if (leaderboardBounds.contains(mouseX, mouseY)) {
+            gamePanel.getAudioManager().playSFX("/resources/Music/click.wav");
+            gamePanel.setGameState(GameState.LEADERBOARD);
         }
     }
 
@@ -148,4 +161,6 @@ public class MenuScreen {
             gamePanel.repaint();
         }
     }
+
+
 }

@@ -7,5 +7,7 @@ public enum GameState {
     CUTSCENE,
     ARCADE_REWARD,
     BATTLE,
-    GAME_OVER
+    GAME_OVER,
+    SETTINGS,
+    LEADERBOARD
 }

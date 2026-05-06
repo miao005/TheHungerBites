@@ -15,6 +15,10 @@ public class GamePanel extends JPanel {
     private GameState gameState = GameState.START;
     private String gameMode = "PVP";
     private String selectedCharacter = "";
+    private Settings settings = new Settings();
+    private Leaderboard leaderboard = new Leaderboard();
+    private SettingsScreen settingsScreen;
+    private LeaderboardScreen leaderboardScreen;
 
     // Managers
     private CharacterManager characterManager;
@@ -64,9 +68,15 @@ public class GamePanel extends JPanel {
         arcadeRewardScreen    = new ArcadeRewardScreen(this);
         gameOverScreen        = new GameOverScreen(this);
         roundCutscene         = new RoundCutscene(this);
+        settingsScreen    = new SettingsScreen(this, settings, audioManager);
+        leaderboardScreen = new LeaderboardScreen(this, leaderboard);
+        gameOverScreen.setLeaderboard(leaderboard);
+        audioManager.setVolume(settings.getVolume() / 100f);
 
         setGameState(GameState.START); // triggers music on launch
     }
+
+
 
     // ═════════════════════════════════════════════════════════════════
     //  Game-flow entry points (called by screens / menus)
@@ -232,7 +242,7 @@ public class GamePanel extends JPanel {
     // ── Game Over ─────────────────────────────────────────────────────
     public void goToGameOver(Character winner, Character loser,
                              boolean arcadeMode, int roundsWon) {
-        gameOverScreen.setup(winner, loser, arcadeMode, roundsWon);
+        gameOverScreen.setup(winner, loser, arcadeMode, matchManager.isAiMode(), roundsWon);;
         setGameState(GameState.GAME_OVER);
     }
 
@@ -289,6 +299,8 @@ public class GamePanel extends JPanel {
     public ArcadeRewardScreen getArcadeRewardScreen()       { return arcadeRewardScreen; }
     public GameOverScreen getGameOverScreen()               { return gameOverScreen; }
     public AudioManager getAudioManager()                    { return audioManager; }
+    public SettingsScreen getSettingsScreen()       { return settingsScreen; }
+    public LeaderboardScreen getLeaderboardScreen() { return leaderboardScreen; }
 
     // ═════════════════════════════════════════════════════════════════
     //  Rendering
@@ -319,6 +331,12 @@ public class GamePanel extends JPanel {
                 break;
             case GAME_OVER:
                 gameOverScreen.draw(g, w, h);
+                break;
+            case SETTINGS:
+                settingsScreen.draw(g, w, h);
+                break;
+            case LEADERBOARD:
+                leaderboardScreen.draw(g, w, h);
                 break;
             default:
                 g.setColor(Color.BLACK);

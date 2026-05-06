@@ -231,6 +231,7 @@ public class CharacterSelectScreen {
                     : new Color(120, 80, 160));
             g2d.fillOval(dotStartX + i * spacing, dotY, dotSize, dotSize);
         }
+        NavButtons.draw((Graphics2D) g, width, height);
     }
 
     // ── Button draw (mirrors MenuScreen logic) ────────────────────────
@@ -379,6 +380,7 @@ public class CharacterSelectScreen {
 
     // ── Mouse input ───────────────────────────────────────────────────
     public void mouseClicked(int mx, int my) {
+        if (NavButtons.handleClick(mx, my, gamePanel)) return;
         boolean isPvp = gamePanel.getGameMode().equals("PVP");
 
         if (leftArrow != null && leftArrow.contains(mx, my)) {

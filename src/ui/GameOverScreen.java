@@ -3,6 +3,7 @@ package ui;
 import main.Character;
 import main.GamePanel;
 import main.GameState;
+import main.Leaderboard;
 
 import java.awt.*;
 
@@ -12,6 +13,11 @@ public class GameOverScreen {
     private boolean playerWon;
     private boolean arcadeMode;
     private int arcadeRoundsWon;
+    private Leaderboard leaderboard;
+    private boolean pvpMode;
+    private String nameInput = "";
+    private boolean nameSubmitted = false;
+    private Rectangle nameSubmitBtn;
 
     private Rectangle btnPlayAgain, btnMenu;
 
@@ -19,12 +25,19 @@ public class GameOverScreen {
         this.gamePanel = gamePanel;
     }
 
-    public void setup(Character winner, Character loser, boolean arcadeMode, int roundsWon) {
+    public void setup(Character winner, Character loser, boolean arcadeMode, boolean aiMode, int roundsWon) {
         this.winner = winner;
         this.loser = loser;
         this.arcadeMode = arcadeMode;
         this.arcadeRoundsWon = roundsWon;
         this.playerWon = winner != null && winner.isPlayer();
+        this.pvpMode = !arcadeMode && !aiMode; // true when it's a PVP match
+        this.nameInput = "";
+        this.nameSubmitted = false;
+    }
+
+    public void setLeaderboard(Leaderboard leaderboard) {
+        this.leaderboard = leaderboard;
     }
 
     public void draw(Graphics g, int width, int height) {
@@ -88,6 +101,38 @@ public class GameOverScreen {
             g2d.drawString(stats, (width - fm.stringWidth(stats)) / 2, (int)(height * 0.60));
         }
 
+        if (pvpMode && winner != null && !nameSubmitted) {
+            int cx = width / 2;
+            int boxY = (int)(height * 0.63);
+            g2d.setFont(new Font("Monospaced", Font.PLAIN, sf(width, 12)));
+            g2d.setColor(Color.WHITE);
+            String prompt = "Enter winner's name for leaderboard:";
+            FontMetrics fm2 = g2d.getFontMetrics();
+            g2d.drawString(prompt, cx - fm2.stringWidth(prompt) / 2, boxY);
+
+            // Input box
+            int inputW = (int)(width * 0.40), inputH = (int)(height * 0.08);
+            int inputX = cx - inputW / 2;
+            g2d.setColor(new Color(40, 30, 80));
+            g2d.fillRoundRect(inputX, boxY + 8, inputW, inputH, 6, 6);
+            g2d.setColor(new Color(180, 160, 255));
+            g2d.setStroke(new BasicStroke(2));
+            g2d.drawRoundRect(inputX, boxY + 8, inputW, inputH, 6, 6);
+            g2d.setStroke(new BasicStroke(1));
+            g2d.setColor(Color.WHITE);
+            g2d.drawString(nameInput + "|", inputX + 8, boxY + 8 + inputH - 10);
+
+            // Submit button
+            int sbW = (int)(width * 0.18), sbH = (int)(height * 0.08);
+            nameSubmitBtn = new Rectangle(cx - sbW / 2, boxY + inputH + 14, sbW, sbH);
+            g2d.setColor(new Color(60, 140, 60));
+            g2d.fillRoundRect(nameSubmitBtn.x, nameSubmitBtn.y, sbW, sbH, 8, 8);
+            g2d.setColor(Color.WHITE);
+            g2d.setFont(new Font("Monospaced", Font.BOLD, sf(width, 12)));
+            fm2 = g2d.getFontMetrics();
+            g2d.drawString("SUBMIT", nameSubmitBtn.x + (sbW - fm2.stringWidth("SUBMIT")) / 2,
+                    nameSubmitBtn.y + (sbH + fm2.getAscent() - fm2.getDescent()) / 2);
+        }
         // Buttons
         int btnW = (int)(width * 0.28);
         int btnH = (int)(height * 0.10);
@@ -101,6 +146,7 @@ public class GameOverScreen {
 
         drawBtn(g2d, btnPlayAgain, "PLAY AGAIN", new Color(60, 100, 200), width);
         drawBtn(g2d, btnMenu, "MAIN MENU", new Color(80, 60, 100), width);
+        NavButtons.draw(g2d, width, height);
     }
 
     private void drawBtn(Graphics2D g2d, Rectangle r, String text, Color bg, int screenW) {
@@ -117,6 +163,14 @@ public class GameOverScreen {
     }
 
     public void mouseClicked(int mx, int my) {
+        if (NavButtons.handleClick(mx, my, gamePanel)) return;
+        if (pvpMode && !nameSubmitted && nameSubmitBtn != null
+                && nameSubmitBtn.contains(mx, my) && !nameInput.isEmpty()) {
+            leaderboard.recordWin(nameInput.trim());
+            nameSubmitted = true;
+            gamePanel.repaint();
+            return;
+        }
         if (btnPlayAgain != null && btnPlayAgain.contains(mx, my)) {
             gamePanel.getAudioManager().playSFX("/resources/Music/click.wav");
             gamePanel.setGameState(GameState.CHARACTER_SELECT);
@@ -126,7 +180,14 @@ public class GameOverScreen {
             gamePanel.setGameState(GameState.MENU);
         }
     }
-
+    public void keyTyped(char c) {
+        if (!pvpMode || nameSubmitted) return;
+        if (c == '\b' && nameInput.length() > 0)
+            nameInput = nameInput.substring(0, nameInput.length() - 1);
+        else if (c != '\b' && nameInput.length() < 16 && c >= 32)
+            nameInput += c;
+        gamePanel.repaint();
+    }
     private int sf(int w, int base) {
         return Math.max(8, (int)(base * w / 640.0));
     }

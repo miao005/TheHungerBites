@@ -36,6 +36,12 @@ public class MouseInputs implements MouseListener, MouseMotionListener {
             case ARCADE_REWARD:
                 gamePanel.getArcadeRewardScreen().mouseClicked(mouseX, mouseY);
                 break;
+            case SETTINGS:
+                gamePanel.getSettingsScreen().mouseClicked(mouseX, mouseY);
+                break;
+            case LEADERBOARD:
+                gamePanel.getLeaderboardScreen().mouseClicked(mouseX, mouseY);
+                break;
             case GAME_OVER:
                 gamePanel.getGameOverScreen().mouseClicked(mouseX, mouseY);
                 break;
