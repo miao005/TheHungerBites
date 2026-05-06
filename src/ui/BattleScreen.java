@@ -228,8 +228,7 @@ public class BattleScreen {
         btnRestImg    = tryLoadImage("/resources/btn_rest.png");
 
         // Character sprites (static PNG for idle fallback)
-        String[] charNames = {"Jollibee","RonaldMcDonald","BurgerKing","ColonelSanders",
-                "TacoBell","Wendys","Poco","Julies"};
+        String[] charNames = {"Jollibee","RonaldMcDonald","BurgerKing","ColonelSanders","TacoBell","Wendys","Poco","Julies"};
         for (String n : charNames) {
             BufferedImage img = tryLoadImage("/resources/sprites/" + n + ".png");
             if (img != null) sprites.put(n, img);
@@ -493,7 +492,9 @@ public class BattleScreen {
                 p2BarW, barH, width);
 
         // Win-pip score (centre of HP bar strip)
-        drawWinPips(g2d, width, hpBarH);
+        if (!isArcadeMode) {
+            drawWinPips(g2d, width, hpBarH);
+        };
     }
 
     /**
@@ -939,10 +940,10 @@ public class BattleScreen {
 
     // ── Helpers ───────────────────────────────────────────────────────
     private String getSpriteKey(Character ch) {
-        String key = ch.getName().replaceAll("[^a-zA-Z]", "");
-        for (String prefix : new String[]{"P1","P2","AI"})
-            if (key.startsWith(prefix)) { key = key.substring(prefix.length()); break; }
-        return key;
+        String name = ch.getName();
+        // Strip known prefixes BEFORE removing non-letters, while the spaces/digits are still there
+        name = name.replaceAll("^(P1|P2|AI)\\s+", "");
+        return name.replaceAll("[^a-zA-Z]", "");
     }
 
     private void addLog(String text) {

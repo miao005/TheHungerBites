@@ -77,6 +77,9 @@ public class MatchManager {
      * OR there are no more rounds left to play.
      */
     public boolean isMatchOver() {
+        if (arcadeMode) {
+            return currentRound >= 1;
+        }
         return p1Wins >= ROUNDS_TO_WIN
                 || p2Wins >= ROUNDS_TO_WIN
                 || currentRound >= MAX_ROUNDS;
