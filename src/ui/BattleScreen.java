@@ -498,21 +498,18 @@ public class BattleScreen {
         g2d.drawLine(0, hpBarH, width, hpBarH);
         g2d.setStroke(new BasicStroke(1));
 
-        // Portrait smaller so it never overlaps the centre pip zone
         int portraitSize = (int)(hpBarH * 0.62);
         int padY         = (hpBarH - portraitSize) / 2;
         int barH         = (int)(portraitSize * 0.28);
 
-        // Reserve a fixed-width zone in the centre for the round/pip display
-        int centreZone   = (int)(width * 0.18); // 18% of screen width
-        int centreLeft   = width / 2 - centreZone / 2;
-        int centreRight  = width / 2 + centreZone / 2;
+        int centreZone  = (int)(width * 0.18);
+        int centreLeft  = width / 2 - centreZone / 2;
+        int centreRight = width / 2 + centreZone / 2;
 
-        // P1: portrait on the far left, bar fills from portrait to centreLeft
-        int pad          = (int)(width * 0.01);
-        int p1PortX      = pad;
-        int p1BarX       = p1PortX + portraitSize + pad;
-        int p1BarW       = centreLeft - p1BarX - pad;
+        int pad     = (int)(width * 0.01);
+        int p1PortX = pad;
+        int p1BarX  = p1PortX + portraitSize + pad;
+        int p1BarW  = centreLeft - p1BarX - pad;
         drawPortrait(g2d, player1, p1PortX, padY, portraitSize, false);
         drawHpBarBlock(g2d, player1, p1BarX,
                 padY + (int)(portraitSize*0.25),
@@ -520,10 +517,9 @@ public class BattleScreen {
                 padY + (int)(portraitSize*0.72),
                 p1BarW, barH, width);
 
-        // P2: bar fills from centreRight to portrait, portrait on the far right
-        int p2PortX      = width - pad - portraitSize;
-        int p2BarW       = p2PortX - pad - centreRight - pad;
-        int p2BarX       = centreRight + pad;
+        int p2PortX = width - pad - portraitSize;
+        int p2BarW  = p2PortX - pad - centreRight - pad;
+        int p2BarX  = centreRight + pad;
         drawPortrait(g2d, player2, p2PortX, padY, portraitSize, true);
         drawHpBarBlock(g2d, player2, p2BarX,
                 padY + (int)(portraitSize*0.25),
@@ -531,12 +527,17 @@ public class BattleScreen {
                 padY + (int)(portraitSize*0.72),
                 p2BarW, barH, width);
 
-        // Win-pip score (centre of HP bar strip)
+        // Win pips for PVP/AI only
         if (!isArcadeMode) {
             drawWinPips(g2d, width, hpBarH);
         }
 
+        // Nav buttons always — top-right corner via NavButtons (works in ALL modes)
         NavButtons.draw(g2d, width, hpBarH);
+
+        // Clear the old centre nav buttons so they don't intercept clicks
+        battleSettingsBtn    = null;
+        battleLeaderboardBtn = null;
     }
 
     /**
@@ -548,22 +549,13 @@ public class BattleScreen {
         MatchManager mm = gamePanel.getMatchManager();
         int p1Wins = mm.getP1Wins();
         int p2Wins = mm.getP2Wins();
-        int needed = MatchManager.ROUNDS_TO_WIN; // 2
+        int needed = MatchManager.ROUNDS_TO_WIN;
 
         int pipR    = Math.max(4, (int)(hpH * 0.09));
         int pipDiam = pipR * 2;
         int gap     = (int)(pipR * 0.9);
         int cx      = width / 2;
         int cy      = hpH / 2;
-
-        // Round label above pips
-        int dispRound = mm.getCurrentRoundNumber() + 1; // rounds completed + 1 = current
-        if (dispRound > MatchManager.MAX_ROUNDS) dispRound = MatchManager.MAX_ROUNDS;
-
-        g2d.setFont(pixelFont.deriveFont((float) sf(width, 7)));
-        FontMetrics fm = g2d.getFontMetrics();
-        g2d.setColor(new Color(255, 215, 0, 200));
-
 
         // P1 pips: left of centre
         for (int i = 0; i < needed; i++) {
@@ -594,17 +586,7 @@ public class BattleScreen {
                 g2d.setStroke(new BasicStroke(1));
             }
         }
-
-        // Nav buttons centred below the pips
-        int btnSize = Math.max(12, (int)(hpH * 0.28));
-        int btnPad  = (int)(btnSize * 0.4);
-        int btnY    = cy + pipR + (int)(hpH * 0.08);
-
-        battleSettingsBtn    = new Rectangle(cx + btnPad / 2,              btnY, btnSize, btnSize);
-        battleLeaderboardBtn = new Rectangle(cx - btnPad / 2 - btnSize,    btnY, btnSize, btnSize);
-
-        drawNavBtn(g2d, battleSettingsBtn,    "S");
-        drawNavBtn(g2d, battleLeaderboardBtn, "L");
+        // NOTE: Nav buttons removed from here — now handled by NavButtons.draw() in drawHpBars
     }
 
     private void drawNavBtn(Graphics2D g2d, Rectangle r, String label) {
@@ -971,16 +953,7 @@ public class BattleScreen {
 
     // ── Execute action ────────────────────────────────────────────────
     public void mouseClicked(int mx, int my) {
-        // Use goToOverlay so back button returns to BATTLE
-        if (battleSettingsBtn != null && battleSettingsBtn.contains(mx, my)) {
-            gamePanel.goToOverlay(GameState.SETTINGS);
-            return;
-        }
-        if (battleLeaderboardBtn != null && battleLeaderboardBtn.contains(mx, my)) {
-            gamePanel.goToOverlay(GameState.LEADERBOARD);
-            return;
-        }
-        // Also handle the NavButtons drawn in top-right (covers arcade mode)
+        // Nav buttons (top-right, always present including arcade)
         if (NavButtons.handleClick(mx, my, gamePanel)) return;
 
         if (!waitingForInput || battleOver || animationPlaying) return;
@@ -997,7 +970,6 @@ public class BattleScreen {
         Character current  = playerTurn ? player1 : player2;
         Character opponent = playerTurn ? player2 : player1;
 
-        // Check mana before playing animation
         battleSystem.executePlayerTurn(current, opponent, skillChoice);
         addLog(current.getLastActionText());
 
@@ -1008,19 +980,26 @@ public class BattleScreen {
             return;
         }
 
-        // Play GIF animation, then continue after ANIM_DURATION_MS
-        playAnimation(current, opponent, skillChoice);
+        // Skip attack animation for Rest — no hit on opponent
+        if (skillChoice == 4) {
+            playAnimation(current, opponent, skillChoice);
+            new Thread(() -> {
+                try { Thread.sleep(ANIM_DURATION_MS + 100); } catch (InterruptedException ignored) {}
+                SwingUtilities.invokeLater(() -> afterAnimation(skillChoice));
+            }).start();
+        } else {
+            playAnimation(current, opponent, skillChoice);
 
-        // Trigger hit flash on opponent halfway through the animation
-        new Thread(() -> {
-            try { Thread.sleep(ANIM_DURATION_MS / 2); } catch (InterruptedException ignored) {}
-            SwingUtilities.invokeLater(() -> triggerHitFlash(opponent));
-        }).start();
+            new Thread(() -> {
+                try { Thread.sleep(ANIM_DURATION_MS / 2); } catch (InterruptedException ignored) {}
+                SwingUtilities.invokeLater(() -> triggerHitFlash(opponent));
+            }).start();
 
-        new Thread(() -> {
-            try { Thread.sleep(ANIM_DURATION_MS + 100); } catch (InterruptedException ignored) {}
-            SwingUtilities.invokeLater(() -> afterAnimation(skillChoice));
-        }).start();
+            new Thread(() -> {
+                try { Thread.sleep(ANIM_DURATION_MS + 100); } catch (InterruptedException ignored) {}
+                SwingUtilities.invokeLater(() -> afterAnimation(skillChoice));
+            }).start();
+        }
     }
 
     private void afterAnimation(int skillChoice) {
@@ -1067,9 +1046,30 @@ public class BattleScreen {
     // ── Helpers ───────────────────────────────────────────────────────
     private String getSpriteKey(Character ch) {
         String name = ch.getName();
-        // Strip known prefixes BEFORE removing non-letters, while the spaces/digits are still there
+
+        // Strip P1/P2/AI prefixes
         name = name.replaceAll("^(P1|P2|AI)\\s+", "");
-        return name.replaceAll("[^a-zA-Z]", "");
+
+        // Strip arcade flavour prefix — everything before and including the last ", "
+        // e.g. "Keeia's favourite, Poco the Potato" → "Poco the Potato"
+        if (name.contains(", ")) {
+            name = name.substring(name.lastIndexOf(", ") + 2);
+        }
+
+        // Strip "The " prefix — e.g. "The Burger King" → "Burger King"
+        name = name.replaceAll("^The\\s+", "");
+
+        // Now match against known sprite keys by checking startsWith
+        // This handles "Poco the Potato" → "Poco", "Julie's the Baker" → "Julies" etc.
+        String[] knownKeys = {"Jollibee","RonaldMcDonald","BurgerKing","ColonelSanders",
+                "TacoBell","Wendys","Poco","Julies"};
+        String clean = name.replaceAll("[^a-zA-Z]", "");
+        for (String key : knownKeys) {
+            if (clean.toLowerCase().startsWith(key.toLowerCase())) {
+                return key;
+            }
+        }
+        return clean;
     }
 
     private void addLog(String text) {

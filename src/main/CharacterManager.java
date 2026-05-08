@@ -54,20 +54,34 @@ public class CharacterManager {
 
     /** Returns a shuffled array of indices excluding the player's index, for Arcade mode */
     public int[] getArcadeOpponentIndices(int playerIndex) {
-        List<Integer> indices = new ArrayList<>();
-        for (int i = 0; i < roster.size(); i++) {
-            if (i != playerIndex) indices.add(i);
-        }
-        // Shuffle
-        for (int i = indices.size() - 1; i > 0; i--) {
+        // Only these 5 characters appear in arcade mode
+        int[] arcadePool = {0, 1, 2, 6, 7}; // Jollibee, RonaldMcDonald, BurgerKing, Poco, Julies
+
+        // Shuffle the pool
+        for (int i = arcadePool.length - 1; i > 0; i--) {
             int j = (int)(Math.random() * (i + 1));
-            int tmp = indices.get(i);
-            indices.set(i, indices.get(j));
-            indices.set(j, tmp);
+            int tmp = arcadePool[i];
+            arcadePool[i] = arcadePool[j];
+            arcadePool[j] = tmp;
         }
-        // Return first 5
-        int[] result = new int[Math.min(5, indices.size())];
-        for (int i = 0; i < result.length; i++) result[i] = indices.get(i);
+
+        // If the player picked one of the arcade characters, remove them from the pool
+        // so they don't fight themselves, and fill with the remaining 4
+        int count = 0;
+        int[] result = new int[5];
+        for (int idx : arcadePool) {
+            if (idx != playerIndex && count < 5) {
+                result[count++] = idx;
+            }
+        }
+
+        // If player was in the pool we only have 4 — that's fine, just return count of them
+        if (count < 5) {
+            int[] trimmed = new int[count];
+            System.arraycopy(result, 0, trimmed, 0, count);
+            return trimmed;
+        }
+
         return result;
     }
 
@@ -79,9 +93,6 @@ public class CharacterManager {
             case "burger king": return "Kimjie's pick, The Burger King";
             case "julie's": return "Jennifer's pick, Julie's the Baker";
             case "poco": return "Keeia's favourite, Poco the Potato";
-            case "colonel sanders": return "The Colonel's Revenge";
-            case "taco bell": return "Taco Bell, Spice Master";
-            case "wendy's": return "Wendy's, the Frost Queen";
             default: return originalName;
         }
     }

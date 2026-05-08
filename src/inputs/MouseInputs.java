@@ -2,6 +2,8 @@ package inputs;
 
 import main.GamePanel;
 import main.GameState;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
@@ -11,6 +13,16 @@ public class MouseInputs implements MouseListener, MouseMotionListener {
 
     public MouseInputs(GamePanel gamePanel) {
         this.gamePanel = gamePanel;
+
+        // Hook keyboard for name entry on game over screen
+        gamePanel.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyTyped(KeyEvent e) {
+                if (gamePanel.getGameState() == GameState.GAME_OVER) {
+                    gamePanel.getGameOverScreen().keyTyped(e.getKeyChar());
+                }
+            }
+        });
     }
 
     @Override
@@ -44,6 +56,8 @@ public class MouseInputs implements MouseListener, MouseMotionListener {
                 break;
             case GAME_OVER:
                 gamePanel.getGameOverScreen().mouseClicked(mouseX, mouseY);
+                // Ensure panel has focus for key events
+                gamePanel.requestFocusInWindow();
                 break;
             default:
                 break;
@@ -67,14 +81,9 @@ public class MouseInputs implements MouseListener, MouseMotionListener {
         }
     }
 
-    @Override
-    public void mousePressed(MouseEvent e) {}
-    @Override
-    public void mouseReleased(MouseEvent e) {}
-    @Override
-    public void mouseEntered(MouseEvent e) {}
-    @Override
-    public void mouseExited(MouseEvent e) {}
-    @Override
-    public void mouseDragged(MouseEvent e) {}
+    @Override public void mousePressed(MouseEvent e)  {}
+    @Override public void mouseReleased(MouseEvent e) {}
+    @Override public void mouseEntered(MouseEvent e)  {}
+    @Override public void mouseExited(MouseEvent e)   {}
+    @Override public void mouseDragged(MouseEvent e)  {}
 }

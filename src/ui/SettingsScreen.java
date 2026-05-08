@@ -103,10 +103,12 @@ public class SettingsScreen {
             settings.setVolume(Math.max(0, vol - 10));
             audioManager.setVolume(settings.getVolume() / 100f);
             settings.save();
+            gamePanel.repaint();  // ← ADD THIS
         } else if (volUpBtn != null && volUpBtn.contains(mx, my)) {
             settings.setVolume(Math.min(100, vol + 10));
             audioManager.setVolume(settings.getVolume() / 100f);
             settings.save();
+            gamePanel.repaint();  // ← ADD THIS
         } else if (mainMenuBtn != null && mainMenuBtn.contains(mx, my)) {
             settings.save();
             gamePanel.setGameState(gamePanel.getPreviousState());

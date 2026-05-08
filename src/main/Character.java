@@ -16,7 +16,7 @@ public abstract class Character {
     protected String skillAttack;
     protected String ultimateAttack;
     private double damageMultiplier = 1.0;
-    private boolean isPlayer;
+    protected boolean isPlayer;
 
     // Last action info for battle log
     private String lastActionText = "";
@@ -78,6 +78,7 @@ public abstract class Character {
     }
 
     public boolean isAlive() { return this.hp > 0; }
+    public boolean isPlayer() { return isPlayer; }
 
     // Getters
     public String getName() { return name; }
