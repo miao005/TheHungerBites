@@ -8,6 +8,7 @@ import java.net.URL;
 
 public class AudioManager {
     private Clip clip;
+    private float currentVolume = 0.5f; // remembered across clip changes
 
     public void playMusic(String filePath) {
         try {
@@ -15,9 +16,9 @@ public class AudioManager {
             AudioInputStream audio = AudioSystem.getAudioInputStream(url);
             clip = AudioSystem.getClip();
             clip.open(audio);
-            setVolume(0.5f); // change this to adjust music volume (0.0 - 1.0)
+            setClipVolume(clip, currentVolume); // use saved volume, not hardcoded
             if (filePath.contains("gameover")) {
-                clip.start(); // plays once, no loop
+                clip.start();
             } else {
                 clip.loop(Clip.LOOP_CONTINUOUSLY);
                 clip.start();
@@ -33,14 +34,15 @@ public class AudioManager {
             AudioInputStream audio = AudioSystem.getAudioInputStream(url);
             Clip sfx = AudioSystem.getClip();
             sfx.open(audio);
-            setClipVolume(sfx, 0.8f); // change this to adjust SFX volume (0.0 - 1.0)
-            sfx.start(); // plays once, no loop, won't interrupt music
+            setClipVolume(sfx, 0.8f);
+            sfx.start();
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
     public void setVolume(float volume) {
+        currentVolume = volume; // remember it
         if (clip != null) setClipVolume(clip, volume);
     }
 
@@ -53,15 +55,7 @@ public class AudioManager {
         return clip != null && clip.isRunning();
     }
 
-    public void stopMusic() {
-        if (clip != null) clip.stop();
-    }
-
-    public void pauseMusic() {
-        if (clip != null) clip.stop();
-    }
-
-    public void resumeMusic() {
-        if (clip != null) clip.start();
-    }
+    public void stopMusic()  { if (clip != null) clip.stop(); }
+    public void pauseMusic() { if (clip != null) clip.stop(); }
+    public void resumeMusic(){ if (clip != null) clip.start(); }
 }
