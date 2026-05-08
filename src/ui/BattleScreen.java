@@ -66,6 +66,11 @@ public class BattleScreen {
     private int attackerAnimX, attackerAnimY, attackerAnimW, attackerAnimH;
     private int defenderAnimX, defenderAnimY, defenderAnimW, defenderAnimH;
     private boolean attackerFlip, defenderFlip;
+
+    // Hit flash state
+    private Character hitFlashTarget = null;
+    private long hitFlashStartMs     = 0;
+    private static final int HIT_FLASH_DURATION_MS = 600;
     private boolean animationPlaying = false;
 
     // ── Battle state ──────────────────────────────────────────────────
@@ -324,6 +329,20 @@ public class BattleScreen {
             if (defenderIcon != null) {
                 drawGif(g2d, defenderIcon, defenderAnimX, defenderAnimY,
                         defenderAnimW, defenderAnimH, defenderFlip);
+                // Hit flash on defender during attack animation
+                if (hitFlashTarget != null && hitFlashStartMs > 0) {
+                    long elapsed = System.currentTimeMillis() - hitFlashStartMs;
+                    if (elapsed < HIT_FLASH_DURATION_MS) {
+                        float progress = (float) elapsed / HIT_FLASH_DURATION_MS;
+                        int alpha = (int)(180 * (1f - progress));
+                        g2d.setColor(new Color(255, 0, 0, alpha));
+                        g2d.fillRect(defenderAnimX, defenderAnimY, defenderAnimW, defenderAnimH);
+                        g2d.setColor(new Color(255, 0, 0, Math.min(255, alpha + 60)));
+                        g2d.setStroke(new BasicStroke(4));
+                        g2d.drawRect(defenderAnimX, defenderAnimY, defenderAnimW, defenderAnimH);
+                        g2d.setStroke(new BasicStroke(1));
+                    }
+                }
             }
         }
 
@@ -388,13 +407,13 @@ public class BattleScreen {
     private void drawSprites(Graphics2D g2d, int width) {
         int spriteH  = (int)(battleH * 0.85);
         int spriteW  = spriteH;
-        int groundY  = battleAreaY + (int)(battleH * 0.65);
+        int groundY  = battleAreaY + (int)(battleH * 1.00);
 
         int p1X = (int)(width * 0.08);
         int p1Y = groundY - spriteH;
         drawIdleSprite(g2d, player1, p1X, p1Y, spriteW, spriteH, false);
 
-        int p2X = (int)(width * 0.50);
+        int p2X = (int)(width * 0.64);
         int p2Y = groundY - spriteH;
         drawIdleSprite(g2d, player2, p2X, p2Y, spriteW, spriteH, true);
     }
@@ -429,6 +448,22 @@ public class BattleScreen {
                 g2d.drawString(label, x + (w - fm.stringWidth(label))/2, y + h/2);
             }
         } // end static sprite fallback
+
+        // Hit flash — red overlay that fades out
+        if (hitFlashTarget == ch && hitFlashStartMs > 0) {
+            long elapsed = System.currentTimeMillis() - hitFlashStartMs;
+            if (elapsed < HIT_FLASH_DURATION_MS) {
+                float progress = (float) elapsed / HIT_FLASH_DURATION_MS;
+                int alpha = (int)(180 * (1f - progress)); // fade from 180 to 0
+                g2d.setColor(new Color(255, 0, 0, alpha));
+                g2d.fillRect(x, y, w, h);
+                // Red outline
+                g2d.setColor(new Color(255, 0, 0, Math.min(255, alpha + 60)));
+                g2d.setStroke(new BasicStroke(4));
+                g2d.drawRect(x, y, w, h);
+                g2d.setStroke(new BasicStroke(1));
+            }
+        }
 
         if (!ch.isAlive()) {
             g2d.setColor(new Color(0,0,0,120));
@@ -835,12 +870,15 @@ public class BattleScreen {
         int batH   = panelH - hpH - botH;
         int spriteH = (int)(batH * 0.85);
         int spriteW = spriteH;
-        int groundY = hpH + (int)(batH * 0.65);
+        int groundY = hpH + (int)(batH * 1.00);
 
         // Attacker is player1 = left, player2 = right
         boolean attackerIsP1 = (attacker == player1);
 
-        int attackerX = attackerIsP1 ? (int)(panelW * 0.08) : (int)(panelW * 0.62);
+        // Idle positions (start of slide)
+        int idleX    = attackerIsP1 ? (int)(panelW * 0.08) : (int)(panelW * 0.62);
+        // Target positions (where attacker slides toward opponent)
+        int targetX  = attackerIsP1 ? (int)(panelW * 0.35) : (int)(panelW * 0.20);
         int defenderX = attackerIsP1 ? (int)(panelW * 0.62) : (int)(panelW * 0.08);
         int spriteY   = groundY - spriteH;
 
@@ -850,9 +888,9 @@ public class BattleScreen {
             if (attackerGif != null) {
                 attackerIcon = new ImageIcon(attackerGif);
                 attackerIcon.setImageObserver(gamePanel);
-                attackerAnimX = attackerX; attackerAnimY = spriteY;
-                attackerAnimW = spriteW;   attackerAnimH = spriteH;
-                attackerFlip  = !attackerIsP1; // right-side attacker faces left
+                attackerAnimX = idleX; attackerAnimY = spriteY;
+                attackerAnimW = spriteW; attackerAnimH = spriteH;
+                attackerFlip  = !attackerIsP1;
             }
 
             if (defenderGif != null) {
@@ -860,10 +898,44 @@ public class BattleScreen {
                 defenderIcon.setImageObserver(gamePanel);
                 defenderAnimX = defenderX; defenderAnimY = spriteY;
                 defenderAnimW = spriteW;   defenderAnimH = spriteH;
-                defenderFlip  = attackerIsP1; // defender on right faces left
+                defenderFlip  = attackerIsP1;
             }
 
             gamePanel.repaint();
+
+            // Smooth slide — only if attacker has a GIF
+            if (attackerGif != null) {
+                int steps     = 30;   // higher = smoother
+                int slideMs   = ANIM_DURATION_MS / 2;
+                int stepDelay = Math.max(1, slideMs / steps);
+
+                // Slide forward toward opponent
+                javax.swing.Timer slideForward = new javax.swing.Timer(stepDelay, null);
+                final int[] step = {0};
+                slideForward.addActionListener(e -> {
+                    step[0]++;
+                    float t    = (float) step[0] / steps;
+                    float ease = t < 0.5f ? 2 * t * t : -1 + (4 - 2 * t) * t;
+                    attackerAnimX = idleX + (int)((targetX - idleX) * ease);
+                    gamePanel.repaint();
+                    if (step[0] >= steps) {
+                        ((javax.swing.Timer) e.getSource()).stop();
+                        // Slide back to idle position
+                        javax.swing.Timer slideBack = new javax.swing.Timer(stepDelay, null);
+                        final int[] step2 = {0};
+                        slideBack.addActionListener(e2 -> {
+                            step2[0]++;
+                            float t2    = (float) step2[0] / steps;
+                            float ease2 = t2 < 0.5f ? 2 * t2 * t2 : -1 + (4 - 2 * t2) * t2;
+                            attackerAnimX = targetX + (int)((idleX - targetX) * ease2);
+                            gamePanel.repaint();
+                            if (step2[0] >= steps) ((javax.swing.Timer) e2.getSource()).stop();
+                        });
+                        slideBack.start();
+                    }
+                });
+                slideForward.start();
+            }
         });
 
         // Hide after duration
@@ -878,6 +950,21 @@ public class BattleScreen {
         defenderIcon = null;
         animationPlaying = false;
         gamePanel.repaint();
+    }
+
+    public void triggerHitFlash(Character target) {
+        hitFlashTarget  = target;
+        hitFlashStartMs = System.currentTimeMillis();
+        // Repaint repeatedly for the flash duration
+        javax.swing.Timer flashTimer = new javax.swing.Timer(16, null);
+        flashTimer.addActionListener(e -> {
+            gamePanel.repaint();
+            if (System.currentTimeMillis() - hitFlashStartMs > HIT_FLASH_DURATION_MS) {
+                hitFlashTarget = null;
+                ((javax.swing.Timer) e.getSource()).stop();
+            }
+        });
+        flashTimer.start();
     }
 
     // ── Execute action ────────────────────────────────────────────────
@@ -928,6 +1015,12 @@ public class BattleScreen {
 
         // Play GIF animation, then continue after ANIM_DURATION_MS
         playAnimation(current, opponent, skillChoice);
+
+        // Trigger hit flash on opponent halfway through the animation
+        new Thread(() -> {
+            try { Thread.sleep(ANIM_DURATION_MS / 2); } catch (InterruptedException ignored) {}
+            SwingUtilities.invokeLater(() -> triggerHitFlash(opponent));
+        }).start();
 
         new Thread(() -> {
             try { Thread.sleep(ANIM_DURATION_MS + 100); } catch (InterruptedException ignored) {}
