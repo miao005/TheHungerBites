@@ -10,8 +10,8 @@ public class SettingsScreen {
     private GamePanel gamePanel;
     private Settings settings;
     private AudioManager audioManager;
+    private Rectangle volDownBtn, volUpBtn, mainMenuBtn, menuBtn, exitBtn;
 
-    private Rectangle volDownBtn, volUpBtn, mainMenuBtn, exitBtn;
 
     public SettingsScreen(GamePanel gamePanel, Settings settings, AudioManager audioManager) {
         this.gamePanel    = gamePanel;
@@ -24,6 +24,8 @@ public class SettingsScreen {
         g2d.setColor(new Color(20, 10, 40));
         g2d.fillRect(0, 0, width, height);
 
+        int cx = width / 2;
+
         // Title
         g2d.setFont(new Font("Monospaced", Font.BOLD, sf(width, 36)));
         g2d.setColor(new Color(255, 215, 0));
@@ -32,7 +34,6 @@ public class SettingsScreen {
         g2d.drawString(title, (width - fm.stringWidth(title)) / 2, (int)(height * 0.15));
 
         // Volume row
-        int cx = width / 2;
         int volY = (int)(height * 0.32);
         g2d.setFont(new Font("Monospaced", Font.PLAIN, sf(width, 18)));
         g2d.setColor(Color.WHITE);
@@ -56,7 +57,6 @@ public class SettingsScreen {
 
         g2d.setFont(new Font("Monospaced", Font.PLAIN, sf(width, 13)));
         g2d.setColor(Color.WHITE);
-        // Replace these with your actual team names
         String[] credits = {
                 "Developed by: Your Team Name",
                 "Art & Sprites: Your Artist",
@@ -69,12 +69,19 @@ public class SettingsScreen {
         }
 
         // Navigation buttons
-        int navW = (int)(width * 0.28), navH = (int)(height * 0.10);
+        int navW = (int)(width * 0.26), navH = (int)(height * 0.10);
         int navY = (int)(height * 0.78);
-        mainMenuBtn = new Rectangle(cx - navW - 10, navY, navW, navH);
-        exitBtn     = new Rectangle(cx + 10,        navY, navW, navH);
-        drawBtn(g2d, mainMenuBtn, "MAIN MENU", new Color(60, 100, 60), width);
-        drawBtn(g2d, exitBtn,     "EXIT GAME", new Color(140, 40, 40), width);
+        int navGap = (int)(width * 0.02);
+        int totalNav = navW * 3 + navGap * 2;
+        int navStartX = cx - totalNav / 2;
+
+        mainMenuBtn  = new Rectangle(navStartX,                    navY, navW, navH);
+        menuBtn      = new Rectangle(navStartX + navW + navGap,    navY, navW, navH);
+        exitBtn      = new Rectangle(navStartX + (navW + navGap)*2, navY, navW, navH);
+
+        drawBtn(g2d, mainMenuBtn, "BACK",      new Color(60, 100, 60),  width);
+        drawBtn(g2d, menuBtn,     "MAIN MENU", new Color(60, 60, 140),  width);
+        drawBtn(g2d, exitBtn,     "EXIT GAME", new Color(140, 40,  40), width);
     }
 
     private void drawBtn(Graphics2D g2d, Rectangle r, String text, Color bg, int screenW) {
@@ -101,6 +108,9 @@ public class SettingsScreen {
             audioManager.setVolume(settings.getVolume() / 100f);
             settings.save();
         } else if (mainMenuBtn != null && mainMenuBtn.contains(mx, my)) {
+            settings.save();
+            gamePanel.setGameState(gamePanel.getPreviousState());
+        } else if (menuBtn != null && menuBtn.contains(mx, my)) {
             settings.save();
             gamePanel.setGameState(GameState.MENU);
         } else if (exitBtn != null && exitBtn.contains(mx, my)) {

@@ -534,7 +534,9 @@ public class BattleScreen {
         // Win-pip score (centre of HP bar strip)
         if (!isArcadeMode) {
             drawWinPips(g2d, width, hpBarH);
-        };
+        }
+
+        NavButtons.draw(g2d, width, hpBarH);
     }
 
     /**
@@ -969,14 +971,18 @@ public class BattleScreen {
 
     // ── Execute action ────────────────────────────────────────────────
     public void mouseClicked(int mx, int my) {
+        // Use goToOverlay so back button returns to BATTLE
         if (battleSettingsBtn != null && battleSettingsBtn.contains(mx, my)) {
-            gamePanel.setGameState(GameState.SETTINGS);
+            gamePanel.goToOverlay(GameState.SETTINGS);
             return;
         }
         if (battleLeaderboardBtn != null && battleLeaderboardBtn.contains(mx, my)) {
-            gamePanel.setGameState(GameState.LEADERBOARD);
+            gamePanel.goToOverlay(GameState.LEADERBOARD);
             return;
         }
+        // Also handle the NavButtons drawn in top-right (covers arcade mode)
+        if (NavButtons.handleClick(mx, my, gamePanel)) return;
+
         if (!waitingForInput || battleOver || animationPlaying) return;
         int choice = -1;
         if      (btnBasic    != null && btnBasic.contains(mx,my))    choice = 1;
@@ -984,17 +990,6 @@ public class BattleScreen {
         else if (btnUltimate != null && btnUltimate.contains(mx,my)) choice = 3;
         else if (btnRest     != null && btnRest.contains(mx,my))     choice = 4;
         if (choice != -1) executeAction(choice);
-    }
-
-    public void mouseMoved(int mx, int my) {
-        if (!waitingForInput || battleOver || animationPlaying) return;
-        int prev = hoveredBtn;
-        hoveredBtn = -1;
-        if      (btnBasic    != null && btnBasic.contains(mx,my))    hoveredBtn = 0;
-        else if (btnSkill    != null && btnSkill.contains(mx,my))    hoveredBtn = 1;
-        else if (btnUltimate != null && btnUltimate.contains(mx,my)) hoveredBtn = 2;
-        else if (btnRest     != null && btnRest.contains(mx,my))     hoveredBtn = 3;
-        if (hoveredBtn != prev) gamePanel.repaint();
     }
 
     private void executeAction(int skillChoice) {

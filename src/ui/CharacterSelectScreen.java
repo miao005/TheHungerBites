@@ -134,8 +134,8 @@ public class CharacterSelectScreen {
         // Sprite should sit on pedestal — bottom of sprite = pedestal top
         int spriteH  = (int)(height * 0.52);
         int spriteW  = spriteH;  // square aspect
-        int pedestalCenterX = (int)(width * 0.1622);
-        int pedestalTopY    = (int)(height * 0.761);
+        int pedestalCenterX = (int)(width * 0.21);
+        int pedestalTopY    = (int)(height * 0.8);
         int spriteX  = pedestalCenterX - spriteW / 2;
         int spriteY  = pedestalTopY - spriteH;
         if (animIcon != null) {
@@ -155,7 +155,7 @@ public class CharacterSelectScreen {
 
         // ──  Character name — centered in pink header, white ─────────
         // Header spans x: 0.3964–0.8531, y mid: 0.2796
-        g2d.setFont(pixelFont.deriveFont((float) sf(width, 20)));
+        g2d.setFont(pixelFont.deriveFont((float) sf(width, 15)));
         g2d.setColor(Color.WHITE);
         fm = g2d.getFontMetrics();
         String charName  = ch.getName().toUpperCase();
@@ -171,10 +171,10 @@ public class CharacterSelectScreen {
         // Add inner padding
         int lorePad  = (int)(width * 0.012);
         int loreX    = panelLeft + lorePad;
-        int loreTopY = (int)(height * 0.375);
+        int loreTopY = (int)(height * 0.4);
         int loreW    = (int)(width * 0.6151) - panelLeft - lorePad * 2;
         int loreH    = (int)(height * 0.7444) - loreTopY;
-        g2d.setFont(new Font("Monospaced", Font.BOLD, sf(width, 8)));
+        g2d.setFont(new Font("Monospaced", Font.BOLD, sf(width, 7)));
         g2d.setColor(new Color(30, 20, 60));
         drawWrappedText(g2d, ch.getBackstory(), loreX, loreTopY, loreW, loreH);
 
@@ -207,11 +207,16 @@ public class CharacterSelectScreen {
         rightArrow = new Rectangle((int)(width * 0.88), arrowY, arrowSize, arrowSize);
 
         returnBtn = new Rectangle(
-                (int)(width * 0.03), (int)(height * 0.85),
-                (int)(width * 0.15), (int)(height * 0.11));
+                (int)(width * 0.03),      // X: 3% from left
+                (int)(height * 0.05),     // Y: 5% from top
+                (int)(width * 0.17),      // Width: 12% of screen
+                (int)(height * 0.11)      // Height: 8% of screen
+        );
         selectBtn = new Rectangle(
-                (int)(width * 0.35), (int)(height * 0.84),
-                (int)(width * 0.30), (int)(height * 0.17));
+                (int)(width * 0.35),
+                (int)(height * 0.86),
+                (int)(width * 0.30),
+                (int)(height * 0.13));
 
         // ──  Draw buttons (PNG or placeholder) + hover glow ─────────
         drawButton(g2d, leftArrow,  imgArrowLeft,  "LEFT", hoveredIndex == 0, false, width);
@@ -291,11 +296,11 @@ public class CharacterSelectScreen {
     private void drawSkillBlock(Graphics2D g2d, String title, String details,
                                 int x, int y, int maxW, int screenW) {
         int lh = g2d.getFontMetrics().getHeight();
-        g2d.setFont(new Font("Monospaced", Font.BOLD, sf(screenW, 9)));
+        g2d.setFont(new Font("Monospaced", Font.BOLD, sf(screenW, 6)));
         g2d.setColor(new Color(50, 0, 70));
         drawWrappedText(g2d, title, x, y, maxW, lh * 2);
 
-        g2d.setFont(new Font("Monospaced", Font.PLAIN, sf(screenW, 9)));
+        g2d.setFont(new Font("Monospaced", Font.PLAIN, sf(screenW, 6)));
         g2d.setColor(new Color(60, 40, 80));
         String[] parts = details.split("  ");
         for (int i = 0; i < parts.length; i++)

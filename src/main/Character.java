@@ -88,22 +88,14 @@ public abstract class Character {
     public int getMaxMana() { return maxMana; }
     public String getTitle() { return title; }
     public String getBackstory() { return backstory; }
-    public String getBasicAttackDesc() { return basicAttack; }
-    public String getSkillAttackDesc() { return skillAttack; }
-    public String getUltimateAttackDesc() { return ultimateAttack; }
     public void setMaxHealth(int maxHealth) { this.maxHp = maxHealth; }
     public void setMaxMana(int maxMana) { this.maxMana = maxMana; }
     public void setHealth(int health) { this.hp = Math.max(0, Math.min(health, this.maxHp)); }
     public void setCurrentMana(int mana) { this.currMana = Math.min(mana, this.maxMana); }
     public void increaseDamage(double multiplier) { this.damageMultiplier += multiplier; }
-    public double getDamageMultiplier() { return damageMultiplier; }
-    public boolean isPlayer() { return isPlayer; }
     public void setPlayer(boolean isPlayer) { this.isPlayer = isPlayer; }
     public String getLastActionText() { return lastActionText; }
-    public int getLastDamageDealt() { return lastDamageDealt; }
     public boolean isLastActionFailed() { return lastActionFailed; }
-    public boolean isLastActionWasRest() { return lastActionWasRest; }
-    public int getLastHealAmount() { return lastHealAmount; }
 
     // Raw attack name getters (for UI)
     public String getBasicAttackName() {

@@ -110,7 +110,6 @@ public class GameOverScreen {
             FontMetrics fm2 = g2d.getFontMetrics();
             g2d.drawString(prompt, cx - fm2.stringWidth(prompt) / 2, boxY);
 
-            // Input box
             int inputW = (int)(width * 0.40), inputH = (int)(height * 0.08);
             int inputX = cx - inputW / 2;
             g2d.setColor(new Color(40, 30, 80));
@@ -122,30 +121,34 @@ public class GameOverScreen {
             g2d.setColor(Color.WHITE);
             g2d.drawString(nameInput + "|", inputX + 8, boxY + 8 + inputH - 10);
 
-            // Submit button
-            int sbW = (int)(width * 0.18), sbH = (int)(height * 0.08);
+            int sbW = (int)(width * 0.18), sbH = (int)(height * 0.07);
             nameSubmitBtn = new Rectangle(cx - sbW / 2, boxY + inputH + 14, sbW, sbH);
             g2d.setColor(new Color(60, 140, 60));
             g2d.fillRoundRect(nameSubmitBtn.x, nameSubmitBtn.y, sbW, sbH, 8, 8);
             g2d.setColor(Color.WHITE);
             g2d.setFont(new Font("Monospaced", Font.BOLD, sf(width, 12)));
             fm2 = g2d.getFontMetrics();
-            g2d.drawString("SUBMIT", nameSubmitBtn.x + (sbW - fm2.stringWidth("SUBMIT")) / 2,
+            g2d.drawString("SUBMIT",
+                    nameSubmitBtn.x + (sbW - fm2.stringWidth("SUBMIT")) / 2,
                     nameSubmitBtn.y + (sbH + fm2.getAscent() - fm2.getDescent()) / 2);
         }
+
+
         // Buttons
         int btnW = (int)(width * 0.28);
         int btnH = (int)(height * 0.10);
-        int btnY = (int)(height * 0.72);
-        int gap = (int)(width * 0.06);
-        int totalBtns = (btnW * 2 + gap);
-        int bx = (width - totalBtns) / 2;
+        // Push buttons lower when name form is visible to avoid overlap
+        int btnY = (pvpMode && winner != null && !nameSubmitted)
+                ? (int)(height * 0.87)
+                : (int)(height * 0.72);
+        int gap  = (int)(width * 0.06);
+        int bx   = (width - (btnW * 2 + gap)) / 2;
 
-        btnPlayAgain = new Rectangle(bx, btnY, btnW, btnH);
-        btnMenu = new Rectangle(bx + btnW + gap, btnY, btnW, btnH);
+        btnPlayAgain = new Rectangle(bx,            btnY, btnW, btnH);
+        btnMenu      = new Rectangle(bx + btnW + gap, btnY, btnW, btnH);
 
         drawBtn(g2d, btnPlayAgain, "PLAY AGAIN", new Color(60, 100, 200), width);
-        drawBtn(g2d, btnMenu, "MAIN MENU", new Color(80, 60, 100), width);
+        drawBtn(g2d, btnMenu,      "MAIN MENU",  new Color(80, 60, 100),  width);
         NavButtons.draw(g2d, width, height);
     }
 

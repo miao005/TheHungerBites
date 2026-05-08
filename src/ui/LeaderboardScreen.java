@@ -44,8 +44,8 @@ public class LeaderboardScreen {
             int rowY = (int)(height * 0.24) + (i + 1) * sf(width, 22);
             Color rowColor = i == 0 ? new Color(255, 215, 0)
                     : i == 1 ? new Color(192, 192, 192)
-                      : i == 2 ? new Color(205, 127, 50)
-                        : Color.WHITE;
+                    : i == 2 ? new Color(205, 127, 50)
+                    : Color.WHITE;
             g2d.setColor(rowColor);
             g2d.drawString("#" + (i + 1),        (int)(width * 0.12), rowY);
             g2d.drawString(entries.get(i)[0],     (int)(width * 0.30), rowY);
@@ -78,7 +78,7 @@ public class LeaderboardScreen {
 
     public void mouseClicked(int mx, int my) {
         if (backBtn != null && backBtn.contains(mx, my))
-            gamePanel.setGameState(GameState.MENU);
+            gamePanel.setGameState(gamePanel.getPreviousState());  // ← CHANGED
     }
 
     private int sf(int w, int base) {

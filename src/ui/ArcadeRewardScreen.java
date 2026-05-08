@@ -2,7 +2,6 @@ package ui;
 
 import main.Character;
 import main.GamePanel;
-
 import java.awt.*;
 
 public class ArcadeRewardScreen {
@@ -18,9 +17,9 @@ public class ArcadeRewardScreen {
     }
 
     public void setup(Character player, int roundJustWon, int totalRounds) {
-        this.player = player;
+        this.player       = player;
         this.roundJustWon = roundJustWon;
-        this.totalRounds = totalRounds;
+        this.totalRounds  = totalRounds;
     }
 
     public void draw(Graphics g, int width, int height) {
@@ -53,20 +52,23 @@ public class ArcadeRewardScreen {
         g2d.drawString(stats, (width - fm.stringWidth(stats)) / 2, (int)(height * 0.27));
 
         // Reward buttons
-        int btnW = (int)(width * 0.60);
+        int btnW = (int)(width  * 0.60);
         int btnH = (int)(height * 0.11);
         int btnX = (width - btnW) / 2;
-        int gap = (int)(height * 0.02);
+        int gap  = (int)(height * 0.02);
 
-        btn1 = new Rectangle(btnX, (int)(height * 0.33), btnW, btnH);
-        btn2 = new Rectangle(btnX, (int)(height * 0.33) + btnH + gap, btnW, btnH);
+        btn1 = new Rectangle(btnX, (int)(height * 0.33),                   btnW, btnH);
+        btn2 = new Rectangle(btnX, (int)(height * 0.33) + btnH + gap,      btnW, btnH);
         btn3 = new Rectangle(btnX, (int)(height * 0.33) + (btnH + gap) * 2, btnW, btnH);
         btn4 = new Rectangle(btnX, (int)(height * 0.33) + (btnH + gap) * 3, btnW, btnH);
 
-        drawRewardBtn(g2d, btn1, "1. Heal 50% HP + Full Mana", new Color(40, 160, 80), width);
-        drawRewardBtn(g2d, btn2, "2. +100% Damage Boost", new Color(60, 80, 200), width);
-        drawRewardBtn(g2d, btn3, "3. +25 Max Health", new Color(160, 40, 160), width);
-        drawRewardBtn(g2d, btn4, "4. +15 Max Mana", new Color(180, 140, 20), width);
+        drawRewardBtn(g2d, btn1, "1. Heal 50% HP + Full Mana",  new Color(40,  160, 80),  width);
+        drawRewardBtn(g2d, btn2, "2. +100% Damage Boost",       new Color(60,  80,  200), width);
+        drawRewardBtn(g2d, btn3, "3. +25 Max Health",           new Color(160, 40,  160), width);
+        drawRewardBtn(g2d, btn4, "4. +15 Max Mana",             new Color(180, 140, 20),  width);
+
+        // ── Settings / Leaderboard nav buttons ───────────────────────
+        NavButtons.draw(g2d, width, height);
     }
 
     private void drawRewardBtn(Graphics2D g2d, Rectangle r, String text, Color bg, int screenW) {
@@ -76,7 +78,6 @@ public class ArcadeRewardScreen {
         g2d.setStroke(new BasicStroke(2));
         g2d.drawRoundRect(r.x, r.y, r.width, r.height, 12, 12);
         g2d.setStroke(new BasicStroke(1));
-
         g2d.setFont(new Font("Monospaced", Font.BOLD, sf(screenW, 14)));
         FontMetrics fm = g2d.getFontMetrics();
         g2d.drawString(text, r.x + (r.width - fm.stringWidth(text)) / 2,
@@ -84,8 +85,11 @@ public class ArcadeRewardScreen {
     }
 
     public void mouseClicked(int mx, int my) {
+        // Check nav buttons first
+        if (NavButtons.handleClick(mx, my, gamePanel)) return;
+
         int choice = -1;
-        if (btn1 != null && btn1.contains(mx, my)) choice = 1;
+        if      (btn1 != null && btn1.contains(mx, my)) choice = 1;
         else if (btn2 != null && btn2.contains(mx, my)) choice = 2;
         else if (btn3 != null && btn3.contains(mx, my)) choice = 3;
         else if (btn4 != null && btn4.contains(mx, my)) choice = 4;
