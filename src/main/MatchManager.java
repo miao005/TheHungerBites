@@ -44,12 +44,12 @@ public class MatchManager {
      */
     public void startMatch(Character p1, Character p2,
                            boolean aiMode, boolean arcadeMode) {
-        this.player1    = p1;
-        this.player2    = p2;
-        this.aiMode     = aiMode;
-        this.arcadeMode = arcadeMode;
-        this.p1Wins     = 0;
-        this.p2Wins     = 0;
+        this.player1      = p1;
+        this.player2      = p2;
+        this.aiMode       = aiMode;
+        this.arcadeMode   = arcadeMode;
+        this.p1Wins       = 0;
+        this.p2Wins       = 0;
         this.currentRound = 0;
     }
 
@@ -109,6 +109,14 @@ public class MatchManager {
      */
     public int getCurrentRoundNumber() {
         return currentRound; // currentRound is incremented after each round ends
+    }
+
+    /**
+     * Returns the current round as a 1-based display number.
+     * Used by BattleScreen to show "ROUND X" in the HP bar for PVP/PvAI.
+     */
+    public int getCurrentRound() {
+        return Math.max(1, currentRound);
     }
 
     /**

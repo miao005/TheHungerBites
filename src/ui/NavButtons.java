@@ -23,21 +23,47 @@ public class NavButtons {
         } catch (Exception ignored) {}
     }
 
+    // ── Standard draw (top-right corner) — used on all non-battle screens ──
     public static void draw(Graphics2D g2d, int width, int height) {
         loadIcons();
 
-        // ── Customize button size and position here ───────────────
-        int btnW = (int)(width  * 0.08);   // button width  (change ratio for wider/narrower)
-        int btnH = (int)(height * 0.07);   // button height (change ratio for taller/shorter)
-        int pad  = (int)(width  * 0.01);   // gap from right edge and between buttons
-        int top  = (int)(height * 0.01);   // gap from top edge
-        // ──────────────────────────────────────────────────────────
+        int btnW = (int)(width  * 0.08);
+        int btnH = (int)(height * 0.07);
+        int pad  = (int)(width  * 0.01);
+        int top  = (int)(height * 0.01);
 
-        settingsBtn    = new Rectangle(width - pad - btnW,            top, btnW, btnH);
-        leaderboardBtn = new Rectangle(width - pad - btnW * 2 - pad,  top, btnW, btnH);
+        settingsBtn    = new Rectangle(width - pad - btnW,           top, btnW, btnH);
+        leaderboardBtn = new Rectangle(width - pad - btnW * 2 - pad, top, btnW, btnH);
 
         drawBtn(g2d, settingsBtn,    settingsIcon,    "S", new Color(60, 80, 160));
         drawBtn(g2d, leaderboardBtn, leaderboardIcon, "L", new Color(100, 60, 140));
+    }
+
+    // ── Battle draw — centred horizontally below pips (or centred in bar for arcade) ──
+    public static void drawBattle(Graphics2D g2d, int width, int hpBarH, boolean isArcadeMode) {
+        loadIcons();
+
+        int btnW = (int)(width   * 0.07);
+        int btnH = (int)(hpBarH  * 0.28);
+        int gap  = (int)(width   * 0.015);
+
+        int totalW = btnW * 2 + gap;
+        int startX = (width - totalW) / 2;
+
+        int cy;
+        if (isArcadeMode) {
+            // No pips — vertically centre in the HP bar
+            cy = (hpBarH - btnH) / 2;
+        } else {
+            // Pips occupy the vertical centre; sit buttons in the lower quarter
+            cy = hpBarH / 2 + (int)(hpBarH * 0.08);
+        }
+
+        settingsBtn    = new Rectangle(startX,              cy, btnW, btnH);
+        leaderboardBtn = new Rectangle(startX + btnW + gap, cy, btnW, btnH);
+
+        drawBtn(g2d, leaderboardBtn, leaderboardIcon, "L", new Color(100, 60, 140));
+        drawBtn(g2d, settingsBtn,    settingsIcon,    "S", new Color(60,  80, 160));
     }
 
     private static void drawBtn(Graphics2D g2d, Rectangle r, BufferedImage icon,
