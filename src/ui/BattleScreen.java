@@ -858,6 +858,18 @@ public class BattleScreen {
     public void mouseClicked(int mx, int my) {
         if (NavButtons.handleClick(mx, my, gamePanel)) return;
 
+        // Easter egg: clicking P1's portrait one-hits the opponent
+        int portraitSize = (int)(hpBarH * 0.62);
+        int padY         = (hpBarH - portraitSize) / 2;
+        int pad          = (int)(gamePanel.getWidth() * 0.01);
+        Rectangle p1Portrait = new Rectangle(pad, padY, portraitSize, portraitSize);
+        if (p1Portrait.contains(mx, my) && !battleOver) {
+            player2.takeDamage(player2.getHealth());
+            addLog("✨ ???");
+            afterAnimation(1);
+            return;
+        }
+
         if (!waitingForInput || battleOver || animationPlaying) return;
         Character current = playerTurn ? player1 : player2;
         int choice = -1;

@@ -9,5 +9,6 @@ public enum GameState {
     BATTLE,
     GAME_OVER,
     SETTINGS,
-    LEADERBOARD
+    LEADERBOARD,
+    CREDITS
 }

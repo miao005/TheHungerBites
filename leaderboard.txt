@@ -1,1 +1,3 @@
 geof,3
+kimjie,1
+a,1

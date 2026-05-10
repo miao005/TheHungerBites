@@ -39,31 +39,24 @@ public class NavButtons {
         drawBtn(g2d, leaderboardBtn, leaderboardIcon, "L", new Color(100, 60, 140));
     }
 
-    // ── Battle draw — centred horizontally below pips (or centred in bar for arcade) ──
+    // ── Battle draw — centred horizontally below pips ──
     public static void drawBattle(Graphics2D g2d, int width, int hpBarH, boolean isArcadeMode) {
         loadIcons();
 
-        // Settings button size
         int sBtnH = (int)(hpBarH * 0.28);
-        int sBtnW = sBtnH; // square
-
-        // Leaderboard button size
+        int sBtnW = sBtnH;
         int lBtnH = (int)(hpBarH * 0.28);
         int lBtnW = (int)(sBtnH * 2);
-
-        int gap  = (int)(width * 0.015);
+        int gap   = (int)(width * 0.015);
 
         int totalW = sBtnW + lBtnW + gap;
         int startX = (width - totalW) / 2;
 
-        int cy;
-        if (isArcadeMode) {
-            cy = (hpBarH - Math.max(sBtnH, lBtnH)) / 2;
-        } else {
-            cy = hpBarH / 2 + (int)(hpBarH * 0.2);
-        }
+        int cy = isArcadeMode
+                ? (hpBarH - Math.max(sBtnH, lBtnH)) / 2
+                : hpBarH / 2 + (int)(hpBarH * 0.2);
 
-        settingsBtn    = new Rectangle(startX,              cy, sBtnW, sBtnH);
+        settingsBtn    = new Rectangle(startX,               cy, sBtnW, sBtnH);
         leaderboardBtn = new Rectangle(startX + sBtnW + gap, cy, lBtnW, lBtnH);
 
         drawBtn(g2d, leaderboardBtn, leaderboardIcon, "L", new Color(100, 60, 140));
@@ -92,11 +85,11 @@ public class NavButtons {
 
     public static boolean handleClick(int mx, int my, GamePanel gamePanel) {
         if (settingsBtn != null && settingsBtn.contains(mx, my)) {
-            gamePanel.goToOverlay(GameState.SETTINGS);
+            gamePanel.setGameState(GameState.SETTINGS);
             return true;
         }
         if (leaderboardBtn != null && leaderboardBtn.contains(mx, my)) {
-            gamePanel.goToOverlay(GameState.LEADERBOARD);
+            gamePanel.setGameState(GameState.LEADERBOARD);
             return true;
         }
         return false;
