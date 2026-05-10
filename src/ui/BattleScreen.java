@@ -39,6 +39,7 @@ public class BattleScreen {
     private Map<String, URL>           gifUrls     = new HashMap<>();
     private Map<String, ImageIcon>     idleIcons   = new HashMap<>();
     private Font pixelFont;
+    private Font minecraftFont;
 
     private ImageIcon attackerIcon;
     private ImageIcon defenderIcon;
@@ -117,7 +118,7 @@ public class BattleScreen {
         java.awt.geom.AffineTransform old = g2d.getTransform();
         g2d.translate(cx, cy); g2d.scale(scale, scale); g2d.translate(-cx, -cy);
 
-        Font roundFont = pixelFont.deriveFont((float) sf(width, 32));
+        Font roundFont = minecraftFont.deriveFont((float) sf(width, 32));
         g2d.setFont(roundFont);
         FontMetrics rfm = g2d.getFontMetrics();
         String roundText = "ROUND  " + currentRound;
@@ -131,7 +132,7 @@ public class BattleScreen {
         g2d.drawLine(cx - rfm.stringWidth(roundText)/2, lineY, cx + rfm.stringWidth(roundText)/2, lineY);
         g2d.setStroke(new BasicStroke(1));
 
-        Font fightFont = pixelFont.deriveFont((float) sf(width, 22));
+        Font fightFont = minecraftFont.deriveFont((float) sf(width, 22));
         g2d.setFont(fightFont);
         FontMetrics ffm = g2d.getFontMetrics();
         String fightText = elapsed > 600 ? "FIGHT!" : "";
@@ -165,6 +166,15 @@ public class BattleScreen {
             }
         } catch (Exception ignored) {}
         if (pixelFont == null) pixelFont = new Font("Monospaced", Font.BOLD, 12);
+        // Minecraft font
+        try {
+            java.io.InputStream mis = getClass().getResourceAsStream("/resources/fonts/Minecraft.ttf");
+            if (mis != null) {
+                minecraftFont = Font.createFont(Font.TRUETYPE_FONT, mis).deriveFont(Font.PLAIN, 12f);
+                GraphicsEnvironment.getLocalGraphicsEnvironment().registerFont(minecraftFont);
+            }
+        } catch (Exception ignored) {}
+        if (minecraftFont == null) minecraftFont = new Font("Monospaced", Font.BOLD, 12);
     }
 
     private void loadAssets() {
@@ -193,7 +203,8 @@ public class BattleScreen {
             if (bossImg != null) bossSprites.put(n, bossImg);
         }
 
-        String[] suffixes = {"_idle","_basic","_skill","_ultimate","_hit"};
+        // ── FIX: added "_rest" to the suffix list so rest GIFs are preloaded ──
+        String[] suffixes = {"_idle","_basic","_skill","_ultimate","_hit","_rest"};
         for (String n : charNames) {
             for (String s : suffixes) {
                 URL url = getClass().getResource("/resources/sprites/" + n + "/" + n + s + ".gif");
@@ -407,7 +418,7 @@ public class BattleScreen {
 
     private void drawHpBarBlock(Graphics2D g2d, Character ch,
                                 int x, int nameY, int hpY, int mpY, int barW, int barH, int screenW) {
-        g2d.setFont(pixelFont.deriveFont((float) sf(screenW,10))); g2d.setColor(Color.WHITE);
+        g2d.setFont(minecraftFont.deriveFont((float) sf(screenW,10))); g2d.setColor(Color.WHITE);
         g2d.drawString(ch.getName(), x, nameY);
         drawBar(g2d,x,hpY,barW,barH,ch.getHealth(),ch.getMaxHealth(),new Color(240,60,60),new Color(80,200,80),"HP");
         drawBar(g2d,x,mpY,barW,barH,ch.getCurrentMana(),ch.getMaxMana(),new Color(40,60,160),new Color(80,140,255),"MP");
@@ -422,14 +433,14 @@ public class BattleScreen {
         g2d.setColor(fc); g2d.fillRoundRect(x,y,(int)(w*ratio),h,4,4);
         g2d.setColor(new Color(255,255,255,60)); g2d.fillRoundRect(x,y,(int)(w*ratio),h/2,4,4);
         g2d.setColor(new Color(0,0,0,120)); g2d.drawRoundRect(x,y,w,h,4,4);
-        g2d.setFont(pixelFont.deriveFont((float)Math.max(6,h-1))); g2d.setColor(Color.WHITE);
+        g2d.setFont(minecraftFont.deriveFont((float)Math.max(6,h-1))); g2d.setColor(Color.WHITE);
         g2d.drawString(label+" "+cur+"/"+max, x+3, y+h-1);
     }
 
     private void drawRoundLabel(Graphics2D g2d, int width) {
         int round = isArcadeMode ? arcadeRound : gamePanel.getMatchManager().getCurrentRound();
         String txt = "ROUND " + round;
-        g2d.setFont(pixelFont.deriveFont((float) sf(width,14)));
+        g2d.setFont(minecraftFont.deriveFont((float) sf(width,14)));
         FontMetrics fm = g2d.getFontMetrics();
         int rx = (width - fm.stringWidth(txt))/2, ry = (int)(hpBarH*0.25);
         g2d.setColor(new Color(0,0,0,150)); g2d.drawString(txt, rx+2, ry+2);
@@ -452,7 +463,7 @@ public class BattleScreen {
         if (canAct) {
             drawAttackButtons(g2d, btnAreaX, bottomY+pad, btnAreaW, bottomH-pad*2, width);
         } else if (!battleOver) {
-            g2d.setFont(pixelFont.deriveFont((float) sf(width,10)));
+            g2d.setFont(minecraftFont.deriveFont((float) sf(width,10)));
             g2d.setColor(new Color(180,160,220));
             String msg = animationPlaying ? "..." :
                     (!playerTurn && (isAiMode||isArcadeMode)) ? player2.getName()+" is thinking..." : "";
@@ -464,7 +475,7 @@ public class BattleScreen {
         g2d.setColor(Color.WHITE); g2d.fillRoundRect(x,y,w,h,8,8);
         g2d.setColor(new Color(40,30,80)); g2d.setStroke(new BasicStroke(3));
         g2d.drawRoundRect(x,y,w,h,8,8); g2d.setStroke(new BasicStroke(1));
-        g2d.setFont(pixelFont.deriveFont((float) sf(screenW,10))); g2d.setColor(new Color(30,20,50));
+        g2d.setFont(minecraftFont.deriveFont((float) sf(screenW,10))); g2d.setColor(new Color(30,20,50));
         FontMetrics fm = g2d.getFontMetrics();
         int lineH = fm.getHeight(), pad = (int)(h*0.10), maxLines = (h-pad*2)/lineH;
         int start = Math.max(0, battleLog.size()-maxLines);
@@ -502,7 +513,6 @@ public class BattleScreen {
                                boolean isHovered, boolean canUse, int screenW) {
         java.awt.geom.AffineTransform old = g2d.getTransform();
 
-        // Scale up on hover (centered on button)
         if (isHovered && canUse) {
             int cx = r.x + r.width  / 2;
             int cy = r.y + r.height / 2;
@@ -522,12 +532,12 @@ public class BattleScreen {
             g2d.setColor(bg); g2d.fillRoundRect(r.x, r.y, r.width, r.height, 10, 10);
             g2d.setColor(new Color(0,0,0,120)); g2d.setStroke(new BasicStroke(1.5f));
             g2d.drawRoundRect(r.x, r.y, r.width, r.height, 10, 10); g2d.setStroke(new BasicStroke(1));
-            g2d.setFont(pixelFont.deriveFont((float) sf(screenW,10)));
+            g2d.setFont(minecraftFont.deriveFont((float) sf(screenW,10)));
             g2d.setColor(canUse ? Color.WHITE : new Color(140,130,150));
             FontMetrics fm = g2d.getFontMetrics();
             String display = fm.stringWidth(name) > r.width-8 ? name.substring(0,Math.min(name.length(),11))+"…" : name;
             g2d.drawString(display, r.x+(r.width-fm.stringWidth(display))/2, r.y+(int)(r.height*0.42));
-            g2d.setFont(pixelFont.deriveFont((float) sf(screenW,8)));
+            g2d.setFont(minecraftFont.deriveFont((float) sf(screenW,8)));
             g2d.setColor(canUse ? new Color(220,220,180) : new Color(120,110,130));
             fm = g2d.getFontMetrics();
             g2d.drawString(cost, r.x+(r.width-fm.stringWidth(cost))/2, r.y+(int)(r.height*0.78));
@@ -543,7 +553,7 @@ public class BattleScreen {
         float alpha = elapsed < FLASH_MS*0.6 ? 1f : 1f-(float)(elapsed-FLASH_MS*0.6)/(float)(FLASH_MS*0.4);
         alpha = Math.max(0f, alpha);
         g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha));
-        g2d.setFont(pixelFont.deriveFont((float) sf(width,22)));
+        g2d.setFont(minecraftFont.deriveFont((float) sf(width,22)));
         FontMetrics fm = g2d.getFontMetrics();
         int fx = (width-fm.stringWidth(flashMessage))/2, fy = (int)(height*0.50);
         g2d.setColor(new Color(0,0,0,(int)(180*alpha))); g2d.drawString(flashMessage,fx+2,fy+2);
@@ -554,9 +564,17 @@ public class BattleScreen {
 
     private void playAnimation(Character attacker, Character defender, int skillChoice) {
         String attackerKey = getSpriteKey(attacker), defenderKey = getSpriteKey(defender);
-        String attackSuffix = skillChoice==1?"_basic":skillChoice==2?"_skill":skillChoice==3?"_ultimate":null;
+
+        // ── FIX: added skillChoice==4 → "_rest" ──
+        String attackSuffix = skillChoice==1 ? "_basic"
+                : skillChoice==2 ? "_skill"
+                : skillChoice==3 ? "_ultimate"
+                : skillChoice==4 ? "_rest"
+                : null;
+
         URL attackerGif = attackSuffix!=null ? gifUrls.get(attackerKey+attackSuffix) : null;
-        URL defenderGif = gifUrls.get(defenderKey+"_hit");
+        // For rest, show defender's idle GIF so they don't disappear
+        URL defenderGif = skillChoice!=4 ? gifUrls.get(defenderKey+"_hit") : gifUrls.get(defenderKey+"_idle");
 
         int panelW=gamePanel.getWidth(), panelH=gamePanel.getHeight();
         int hpH=(int)(panelH*0.18), botH=(int)(panelH*0.30), batH=panelH-hpH-botH;
@@ -580,30 +598,33 @@ public class BattleScreen {
                 defenderFlip=attackerIsP1;
             }
             gamePanel.repaint();
-            if (attackerGif!=null) {
-                int steps=30, slideMs=ANIM_DURATION_MS/2, stepDelay=Math.max(1,slideMs/steps);
-                javax.swing.Timer slideForward=new javax.swing.Timer(stepDelay,null);
-                final int[] step={0};
-                slideForward.addActionListener(e -> {
-                    step[0]++; float t=(float)step[0]/steps;
-                    float ease=t<0.5f?2*t*t:-1+(4-2*t)*t;
-                    attackerAnimX=idleX+(int)((targetX-idleX)*ease); gamePanel.repaint();
-                    if (step[0]>=steps) {
-                        ((javax.swing.Timer)e.getSource()).stop();
-                        javax.swing.Timer slideBack=new javax.swing.Timer(stepDelay,null);
-                        final int[] step2={0};
-                        slideBack.addActionListener(e2 -> {
-                            step2[0]++; float t2=(float)step2[0]/steps;
-                            float ease2=t2<0.5f?2*t2*t2:-1+(4-2*t2)*t2;
-                            attackerAnimX=targetX+(int)((idleX-targetX)*ease2); gamePanel.repaint();
-                            if (step2[0]>=steps) ((javax.swing.Timer)e2.getSource()).stop();
-                        });
-                        slideBack.start();
-                    }
-                });
-                slideForward.start();
-            }
+
+            // For rest, no slide — just play in place
+            if (skillChoice == 4 || attackerGif == null) return;
+
+            int steps=30, slideMs=ANIM_DURATION_MS/2, stepDelay=Math.max(1,slideMs/steps);
+            javax.swing.Timer slideForward=new javax.swing.Timer(stepDelay,null);
+            final int[] step={0};
+            slideForward.addActionListener(e -> {
+                step[0]++; float t=(float)step[0]/steps;
+                float ease=t<0.5f?2*t*t:-1+(4-2*t)*t;
+                attackerAnimX=idleX+(int)((targetX-idleX)*ease); gamePanel.repaint();
+                if (step[0]>=steps) {
+                    ((javax.swing.Timer)e.getSource()).stop();
+                    javax.swing.Timer slideBack=new javax.swing.Timer(stepDelay,null);
+                    final int[] step2={0};
+                    slideBack.addActionListener(e2 -> {
+                        step2[0]++; float t2=(float)step2[0]/steps;
+                        float ease2=t2<0.5f?2*t2*t2:-1+(4-2*t2)*t2;
+                        attackerAnimX=targetX+(int)((idleX-targetX)*ease2); gamePanel.repaint();
+                        if (step2[0]>=steps) ((javax.swing.Timer)e2.getSource()).stop();
+                    });
+                    slideBack.start();
+                }
+            });
+            slideForward.start();
         });
+
         new Thread(() -> {
             try { Thread.sleep(ANIM_DURATION_MS); } catch (InterruptedException ignored) {}
             SwingUtilities.invokeLater(this::hideAnimations);

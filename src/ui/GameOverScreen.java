@@ -5,7 +5,10 @@ import main.GamePanel;
 import main.GameState;
 import main.Leaderboard;
 
+import javax.swing.ImageIcon;
 import java.awt.*;
+import java.io.InputStream;
+import java.net.URL;
 
 public class GameOverScreen {
     private GamePanel gamePanel;
@@ -25,8 +28,44 @@ public class GameOverScreen {
     private static final int   LIFT  = 3;
     private static final float SCALE = 1.05f;
 
+    private ImageIcon victoryGif;
+    private ImageIcon gameoverGif;
+    private Font minecraftFont;
+
     public GameOverScreen(GamePanel gamePanel) {
         this.gamePanel = gamePanel;
+        loadFont();
+        loadGifs();
+    }
+
+    private void loadFont() {
+        try {
+            InputStream is = getClass().getResourceAsStream("/resources/fonts/Minecraft.ttf");
+            if (is != null) {
+                minecraftFont = Font.createFont(Font.TRUETYPE_FONT, is).deriveFont(Font.PLAIN, 14f);
+                GraphicsEnvironment.getLocalGraphicsEnvironment().registerFont(minecraftFont);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        if (minecraftFont == null) minecraftFont = new Font("Monospaced", Font.BOLD, 14);
+    }
+
+    private Font mc(int size) {
+        return minecraftFont.deriveFont(Font.PLAIN, (float) size);
+    }
+
+    private void loadGifs() {
+        URL victoryUrl = getClass().getResource("/resources/victory.gif");
+        if (victoryUrl != null) {
+            victoryGif = new ImageIcon(victoryUrl);
+            victoryGif.setImageObserver(gamePanel);
+        }
+        URL gameoverUrl = getClass().getResource("/resources/gameover.gif");
+        if (gameoverUrl != null) {
+            gameoverGif = new ImageIcon(gameoverUrl);
+            gameoverGif.setImageObserver(gamePanel);
+        }
     }
 
     public void setup(Character winner, Character loser, boolean arcadeMode, boolean aiMode, int roundsWon) {
@@ -41,7 +80,6 @@ public class GameOverScreen {
         this.hoveredBtn      = -1;
         this.nameSubmitBtn   = null;
 
-        // Try to grab leaderboard from GamePanel if not already set
         if (leaderboard == null) leaderboard = gamePanel.getLeaderboard();
     }
 
@@ -53,55 +91,54 @@ public class GameOverScreen {
         Graphics2D g2d = (Graphics2D) g;
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-        g2d.setColor(playerWon ? new Color(10,30,10) : new Color(30,10,10));
-        g2d.fillRect(0, 0, width, height);
-        g2d.setColor(playerWon ? new Color(60,200,80,80) : new Color(200,60,60,80));
-        g2d.setStroke(new BasicStroke(8));
-        g2d.drawRect(4, 4, width-8, height-8);
-        g2d.setStroke(new BasicStroke(1));
+        // Background GIF
+        ImageIcon bgGif = playerWon ? victoryGif : gameoverGif;
+        if (bgGif != null) {
+            g2d.drawImage(bgGif.getImage(), 0, 0, width, height, gamePanel);
+        } else {
+            g2d.setColor(playerWon ? new Color(10,30,10) : new Color(30,10,10));
+            g2d.fillRect(0, 0, width, height);
+        }
 
-        String headline = playerWon ? "VICTORY!" : "GAME OVER";
-        g2d.setFont(new Font("Monospaced", Font.BOLD, sf(width,42)));
-        FontMetrics fm = g2d.getFontMetrics();
-        g2d.setColor(playerWon ? new Color(255,215,0) : new Color(255,60,60));
-        g2d.drawString(headline, (width-fm.stringWidth(headline))/2, (int)(height*0.22));
+        FontMetrics fm;
 
         if (winner != null) {
-            g2d.setFont(new Font("Monospaced", Font.BOLD, sf(width,18)));
+            g2d.setFont(mc(sf(width,18)));
             g2d.setColor(Color.WHITE);
-            String winStr = "👑 " + winner.getName() + " wins!";
+            String winStr = " " + winner.getName() + " wins!";
             fm = g2d.getFontMetrics();
             g2d.drawString(winStr, (width-fm.stringWidth(winStr))/2, (int)(height*0.35));
         }
         if (loser != null) {
-            g2d.setFont(new Font("Monospaced", Font.PLAIN, sf(width,13)));
+            g2d.setFont(mc(sf(width,13)));
             g2d.setColor(new Color(180,180,180));
             String loseStr = loser.getName() + " has fallen.";
             fm = g2d.getFontMetrics();
             g2d.drawString(loseStr, (width-fm.stringWidth(loseStr))/2, (int)(height*0.43));
         }
         if (arcadeMode) {
-            g2d.setFont(new Font("Monospaced", Font.PLAIN, sf(width,12)));
+            g2d.setFont(mc(sf(width,12)));
             g2d.setColor(new Color(255,215,0));
-            String arcStr = playerWon ? "ARCADE COMPLETE! All rounds defeated!" :
-                    "You reached Round " + arcadeRoundsWon + ". Better luck next time!";
+            String arcStr = playerWon
+                    ? "ARCADE COMPLETE! All rounds defeated!"
+                    : "You reached Round " + arcadeRoundsWon + ". Better luck next time!";
             fm = g2d.getFontMetrics();
             g2d.drawString(arcStr, (width-fm.stringWidth(arcStr))/2, (int)(height*0.52));
         }
         if (winner != null) {
-            g2d.setFont(new Font("Monospaced", Font.PLAIN, sf(width,11)));
+            g2d.setFont(mc(sf(width,11)));
             g2d.setColor(new Color(140,220,140));
-            String stats = "Winner HP: "+winner.getHealth()+"/"+winner.getMaxHealth()+
-                    "   Mana: "+winner.getCurrentMana()+"/"+winner.getMaxMana();
+            String stats = "Winner HP: "+winner.getHealth()+"/"+winner.getMaxHealth()
+                    +"   Mana: "+winner.getCurrentMana()+"/"+winner.getMaxMana();
             fm = g2d.getFontMetrics();
             g2d.drawString(stats, (width-fm.stringWidth(stats))/2, (int)(height*0.60));
         }
 
-        // Name input form — only in PVP and winner exists and not yet submitted
+        // Name input form
         if (pvpMode && winner != null && !nameSubmitted) {
             int cx = width/2;
             int boxY = (int)(height*0.63);
-            g2d.setFont(new Font("Monospaced", Font.PLAIN, sf(width,12)));
+            g2d.setFont(mc(sf(width,12)));
             g2d.setColor(Color.WHITE);
             String prompt = "Enter winner's name for leaderboard:";
             FontMetrics fm2 = g2d.getFontMetrics();
@@ -115,12 +152,12 @@ public class GameOverScreen {
             g2d.drawRoundRect(inputX, boxY+8, inputW, inputH, 6, 6);
             g2d.setStroke(new BasicStroke(1));
             g2d.setColor(Color.WHITE);
+            g2d.setFont(mc(sf(width,12)));
             g2d.drawString(nameInput+"|", inputX+8, boxY+8+inputH-10);
 
             int sbW=(int)(width*0.18), sbH=(int)(height*0.07);
             nameSubmitBtn = new Rectangle(cx-sbW/2, boxY+inputH+14, sbW, sbH);
 
-            // Submit button — greyed out if empty
             boolean canSubmit = !nameInput.trim().isEmpty();
             g2d.setColor(canSubmit ? new Color(60,140,60) : new Color(60,80,60));
             g2d.fillRoundRect(nameSubmitBtn.x, nameSubmitBtn.y, sbW, sbH, 8, 8);
@@ -128,14 +165,13 @@ public class GameOverScreen {
             g2d.setStroke(new BasicStroke(2));
             g2d.drawRoundRect(nameSubmitBtn.x, nameSubmitBtn.y, sbW, sbH, 8, 8);
             g2d.setStroke(new BasicStroke(1));
-            g2d.setFont(new Font("Monospaced", Font.BOLD, sf(width,12)));
+            g2d.setFont(mc(sf(width,12)));
             fm2 = g2d.getFontMetrics();
             g2d.drawString("SUBMIT",
                     nameSubmitBtn.x+(sbW-fm2.stringWidth("SUBMIT"))/2,
                     nameSubmitBtn.y+(sbH+fm2.getAscent()-fm2.getDescent())/2);
         }
 
-        // Play Again / Main Menu buttons
         int btnW=(int)(width*0.28), btnH=(int)(height*0.10);
         int btnY = (pvpMode && winner!=null && !nameSubmitted) ? (int)(height*0.87) : (int)(height*0.72);
         int gap=(int)(width*0.06), bx=(width-(btnW*2+gap))/2;
@@ -164,7 +200,7 @@ public class GameOverScreen {
         g2d.setStroke(new BasicStroke(2));
         g2d.drawRoundRect(r.x, r.y, r.width, r.height, 12, 12);
         g2d.setStroke(new BasicStroke(1));
-        g2d.setFont(new Font("Monospaced", Font.BOLD, sf(screenW,13)));
+        g2d.setFont(mc(sf(screenW,13)));
         FontMetrics fm = g2d.getFontMetrics();
         g2d.drawString(text, r.x+(r.width-fm.stringWidth(text))/2,
                 r.y+(r.height+fm.getAscent()-fm.getDescent())/2);
@@ -174,7 +210,6 @@ public class GameOverScreen {
     public void mouseClicked(int mx, int my) {
         if (NavButtons.handleClick(mx, my, gamePanel)) return;
 
-        // Submit button — check first before other buttons
         if (pvpMode && !nameSubmitted && nameSubmitBtn != null && nameSubmitBtn.contains(mx, my)) {
             String trimmed = nameInput.trim();
             if (!trimmed.isEmpty() && leaderboard != null) {

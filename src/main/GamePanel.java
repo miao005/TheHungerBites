@@ -34,7 +34,6 @@ public class GamePanel extends JPanel {
     private BattleScreen battleScreen;
     private ArcadeRewardScreen arcadeRewardScreen;
     private GameOverScreen gameOverScreen;
-    private RoundCutscene roundCutscene;
     private SettingsScreen settingsScreen;
     private LeaderboardScreen leaderboardScreen;
     private CreditsScreen creditsScreen;
@@ -72,7 +71,6 @@ public class GamePanel extends JPanel {
         battleScreen          = new BattleScreen(this);
         arcadeRewardScreen    = new ArcadeRewardScreen(this);
         gameOverScreen        = new GameOverScreen(this);
-        roundCutscene         = new RoundCutscene(this);
 
         settings        = new Settings();
         leaderboard     = new Leaderboard();
@@ -144,8 +142,7 @@ public class GamePanel extends JPanel {
         Character p1 = matchManager.getPlayer1();
         Character p2 = matchManager.getPlayer2();
 
-        // Cutscene shows "ROUND X"
-        roundCutscene.setup(p1, p2, roundNumber);
+
 
         // Tell BattleScreen to start
         battleScreen.startBattle(
@@ -328,9 +325,6 @@ public class GamePanel extends JPanel {
                 break;
             case CHARACTER_SELECT:
                 characterSelectScreen.draw(g, w, h);
-                break;
-            case CUTSCENE:
-                roundCutscene.draw(g, w, h);
                 break;
             case BATTLE:
                 battleScreen.draw(g, w, h);

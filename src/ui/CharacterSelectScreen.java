@@ -9,6 +9,7 @@ import javax.imageio.ImageIO;
 import javax.swing.ImageIcon;
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.io.InputStream;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
@@ -23,7 +24,7 @@ public class CharacterSelectScreen {
     private Map<String, BufferedImage> sprites = new HashMap<>();
     private Map<String, ImageIcon> animatedSprites = new HashMap<>();
 
-    private Font pixelFont;
+    private Font minecraftFont;
 
     private int p1Index = 0;
     private int p2Index = 1;
@@ -40,15 +41,26 @@ public class CharacterSelectScreen {
     public CharacterSelectScreen(GamePanel gamePanel, CharacterManager characterManager) {
         this.gamePanel = gamePanel;
         this.characterManager = characterManager;
-        try {
-            pixelFont = Font.createFont(Font.TRUETYPE_FONT,
-                            getClass().getResourceAsStream("/resources/fonts/ARCADE_N.TTF"))
-                    .deriveFont(Font.PLAIN, 16f);
-        } catch (Exception e) {
-            pixelFont = new Font("Monospaced", Font.BOLD, 16);
-        }
+        loadFont();
         loadImages();
         loadSprites();
+    }
+
+    private void loadFont() {
+        try {
+            InputStream is = getClass().getResourceAsStream("/resources/fonts/Minecraft.ttf");
+            if (is != null) {
+                minecraftFont = Font.createFont(Font.TRUETYPE_FONT, is).deriveFont(Font.PLAIN, 14f);
+                GraphicsEnvironment.getLocalGraphicsEnvironment().registerFont(minecraftFont);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        if (minecraftFont == null) minecraftFont = new Font("Monospaced", Font.BOLD, 17);
+    }
+
+    private Font mc(int size) {
+        return minecraftFont.deriveFont(Font.PLAIN, (float) size);
     }
 
     private void loadImages() {
@@ -99,7 +111,7 @@ public class CharacterSelectScreen {
 
         boolean isPvp = gamePanel.getGameMode().equals("PVP");
         String playerLabel = selectingP1 ? "PLAYER 1" : (isPvp ? "PLAYER 2" : "PLAYER 1");
-        g2d.setFont(pixelFont.deriveFont((float) sf(width, 20)));
+        g2d.setFont(mc(sf(width, 18)));
         g2d.setColor(Color.WHITE);
         FontMetrics fm = g2d.getFontMetrics();
         g2d.drawString(playerLabel, (width - fm.stringWidth(playerLabel)) / 2, (int)(height * 0.09));
@@ -121,7 +133,7 @@ public class CharacterSelectScreen {
             }
         }
 
-        g2d.setFont(pixelFont.deriveFont((float) sf(width, 15)));
+        g2d.setFont(mc(sf(width, 25)));
         g2d.setColor(Color.WHITE);
         fm = g2d.getFontMetrics();
         String charName = ch.getName().toUpperCase();
@@ -135,7 +147,7 @@ public class CharacterSelectScreen {
         int loreTopY = (int)(height * 0.4);
         int loreW    = (int)(width * 0.6151) - panelLeft - lorePad * 2;
         int loreH    = (int)(height * 0.7444) - loreTopY;
-        g2d.setFont(new Font("Monospaced", Font.BOLD, sf(width, 7)));
+        g2d.setFont(mc(sf(width, 9)));
         g2d.setColor(new Color(30, 20, 60));
         drawWrappedText(g2d, ch.getBackstory(), loreX, loreTopY, loreW, loreH);
 
@@ -161,12 +173,10 @@ public class CharacterSelectScreen {
         selectBtn  = new Rectangle((int)(width * 0.35), (int)(height * 0.86),
                 (int)(width * 0.30), (int)(height * 0.13));
 
-        // Arrows: scale only (no upward lift)
         drawScaleOnly(g2d, leftArrow,  imgArrowLeft,  "LEFT",   hoveredIndex == 0, width);
         drawScaleOnly(g2d, rightArrow, imgArrowRight, "RIGHT",  hoveredIndex == 1, width);
-        // Regular buttons: lift + scale
-        drawLiftScale(g2d, returnBtn, imgReturn, "RETURN", hoveredIndex == 3, true,  width);
-        drawLiftScale(g2d, selectBtn, imgSelect, "SELECT", hoveredIndex == 2, true,  width);
+        drawLiftScale(g2d, returnBtn,  imgReturn,     "RETURN", hoveredIndex == 3, true,  width);
+        drawLiftScale(g2d, selectBtn,  imgSelect,     "SELECT", hoveredIndex == 2, true,  width);
 
         int dotCount  = characterManager.getRosterSize();
         int dotSize   = Math.max(5, width / 90);
@@ -180,7 +190,6 @@ public class CharacterSelectScreen {
         NavButtons.draw(g2d, width, height);
     }
 
-    /** Lift + scale — for Select and Return buttons */
     private void drawLiftScale(Graphics2D g2d, Rectangle r, BufferedImage img,
                                String fallback, boolean hovered, boolean isText, int screenW) {
         if (r == null) return;
@@ -196,7 +205,6 @@ public class CharacterSelectScreen {
         g2d.setTransform(old);
     }
 
-    /** Scale only — for left/right arrows */
     private void drawScaleOnly(Graphics2D g2d, Rectangle r, BufferedImage img,
                                String fallback, boolean hovered, int screenW) {
         if (r == null) return;
@@ -226,7 +234,7 @@ public class CharacterSelectScreen {
             g2d.drawRoundRect(r.x, r.y, r.width, r.height, 20, 20);
             g2d.setStroke(new BasicStroke(1));
             int fontSize = Math.max(8, (int)(r.height * 0.45));
-            g2d.setFont(new Font("Monospaced", Font.BOLD, fontSize));
+            g2d.setFont(mc(fontSize));
             g2d.setColor(Color.WHITE);
             FontMetrics fm = g2d.getFontMetrics();
             g2d.drawString(fallback,
@@ -237,11 +245,11 @@ public class CharacterSelectScreen {
 
     private void drawSkillBlock(Graphics2D g2d, String title, String details,
                                 int x, int y, int maxW, int screenW) {
+        g2d.setFont(mc(sf(screenW, 7)));
         int lh = g2d.getFontMetrics().getHeight();
-        g2d.setFont(new Font("Monospaced", Font.BOLD, sf(screenW, 6)));
         g2d.setColor(new Color(50, 0, 70));
         drawWrappedText(g2d, title, x, y, maxW, lh * 2);
-        g2d.setFont(new Font("Monospaced", Font.PLAIN, sf(screenW, 6)));
+        g2d.setFont(mc(sf(screenW, 6)));
         g2d.setColor(new Color(60, 40, 80));
         String[] parts = details.split("  ");
         for (int i = 0; i < parts.length; i++)
