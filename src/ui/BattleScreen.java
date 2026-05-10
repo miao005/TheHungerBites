@@ -29,6 +29,7 @@ public class BattleScreen {
     private BattleSystem battleSystem;
 
     private BufferedImage currentMap;
+    private Map<Integer, BufferedImage> roundBanners = new HashMap<>();
     private Map<String, BufferedImage> mapImages  = new HashMap<>();
     private BufferedImage battleBottomBg;
     private BufferedImage btnBasicImg, btnSkillImg, btnUltimateImg, btnRestImg;
@@ -86,6 +87,7 @@ public class BattleScreen {
         this.showRoundStart  = true;
         this.roundStartTime  = System.currentTimeMillis();
         this.waitingForInput = false;
+        gamePanel.getAudioManager().playSFX("/resources/Music/round" + round + ".wav");
     }
 
     private void drawRoundStartIndicator(Graphics2D g2d, int width, int height) {
@@ -162,7 +164,13 @@ public class BattleScreen {
             g2d.drawString(fightText, fx, fy);
             g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha));
         }
-
+        // Draw round banner PNG if available
+        BufferedImage banner = roundBanners.get(currentRound);
+        if (banner != null) {
+            g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha));
+            g2d.drawImage(banner, 0, 0, width, height, null);
+            g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1f));
+        }
         g2d.setTransform(old);
         g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1f));
 
@@ -194,6 +202,9 @@ public class BattleScreen {
         btnSkillImg    = tryLoadImage("/resources/btn_skill.png");
         btnUltimateImg = tryLoadImage("/resources/btn_ultimate.png");
         btnRestImg     = tryLoadImage("/resources/btn_rest.png");
+        roundBanners.put(1, tryLoadImage("/resources/rounds/round1.png"));
+        roundBanners.put(2, tryLoadImage("/resources/rounds/round2.png"));
+        roundBanners.put(3, tryLoadImage("/resources/rounds/round3.png"));
 
         String[] charNames = {"Jollibee","RonaldMcDonald","BurgerKing","ColonelSanders",
                 "TacoBell","Wendys","Poco","Julies"};

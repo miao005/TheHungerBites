@@ -37,7 +37,7 @@ public class SettingsScreen {
         int volY = (int)(height * 0.32);
         g2d.setFont(new Font("Monospaced", Font.PLAIN, sf(width, 18)));
         g2d.setColor(Color.WHITE);
-        String volLabel = "Volume: " + settings.getVolume() + "%";
+        String volLabel = "Music Volume: " + settings.getVolume() + "%";
         fm = g2d.getFontMetrics();
         int labelW = fm.stringWidth(volLabel);
         g2d.drawString(volLabel, cx - labelW / 2, volY);
