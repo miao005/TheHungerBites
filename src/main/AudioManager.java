@@ -21,6 +21,7 @@ public class AudioManager {
                 clip.start();
             } else {
                 clip.loop(Clip.LOOP_CONTINUOUSLY);
+
                 clip.start();
             }
         } catch (Exception e) {
@@ -56,6 +57,4 @@ public class AudioManager {
     }
 
     public void stopMusic()  { if (clip != null) clip.stop(); }
-    public void pauseMusic() { if (clip != null) clip.stop(); }
-    public void resumeMusic(){ if (clip != null) clip.start(); }
 }

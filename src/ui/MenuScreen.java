@@ -17,6 +17,9 @@ public class MenuScreen {
     private Rectangle arcadeBounds;
     private int hoveredIndex = -1;
 
+    private static final int   LIFT  = 3;
+    private static final float SCALE = 1.05f;
+
     public MenuScreen(GamePanel gamePanel) {
         this.gamePanel = gamePanel;
         try {
@@ -46,28 +49,30 @@ public class MenuScreen {
         pvAiBounds   = new Rectangle(buttonX, (int)(height * 0.58), buttonWidth, buttonHeight);
         arcadeBounds = new Rectangle(buttonX, (int)(height * 0.69), buttonWidth, buttonHeight);
 
-        drawButton(g, pvpBounds,    btnPVP,    "PVP",    hoveredIndex == 0);
-        drawButton(g, pvAiBounds,   btnPVAI,   "P V AI", hoveredIndex == 1);
-        drawButton(g, arcadeBounds, btnArcade, "ARCADE", hoveredIndex == 2);
+        drawButton((Graphics2D) g, pvpBounds,    btnPVP,    "PVP",    hoveredIndex == 0);
+        drawButton((Graphics2D) g, pvAiBounds,   btnPVAI,   "P V AI", hoveredIndex == 1);
+        drawButton((Graphics2D) g, arcadeBounds, btnArcade, "ARCADE", hoveredIndex == 2);
 
         NavButtons.draw((Graphics2D) g, width, height);
     }
 
-    private void drawButton(Graphics g, Rectangle bounds, BufferedImage buttonImage,
-                            String text, boolean isHovered) {
+    private void drawButton(Graphics2D g2d, Rectangle bounds, BufferedImage img,
+                            String text, boolean hovered) {
         if (bounds == null) return;
-        Graphics2D g2d = (Graphics2D) g;
-        if (buttonImage != null) {
-            g.drawImage(buttonImage, bounds.x, bounds.y, bounds.width, bounds.height, null);
-            if (isHovered) {
-                g2d.setColor(new Color(255, 215, 0, 100));
-                g2d.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);
-                g2d.setColor(new Color(255, 215, 0, 180));
-                g2d.setStroke(new BasicStroke(3));
-                g2d.drawRect(bounds.x - 3, bounds.y - 3, bounds.width + 6, bounds.height + 6);
-            }
+        java.awt.geom.AffineTransform old = g2d.getTransform();
+
+        if (hovered) {
+            int cx = bounds.x + bounds.width  / 2;
+            int cy = bounds.y + bounds.height / 2;
+            g2d.translate(cx, cy - LIFT);
+            g2d.scale(SCALE, SCALE);
+            g2d.translate(-cx, -cy);
+        }
+
+        if (img != null) {
+            g2d.drawImage(img, bounds.x, bounds.y, bounds.width, bounds.height, null);
         } else {
-            g2d.setColor(isHovered ? new Color(100, 85, 255) : new Color(60, 50, 180));
+            g2d.setColor(hovered ? new Color(100, 85, 255) : new Color(60, 50, 180));
             g2d.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);
             g2d.setColor(new Color(180, 160, 255));
             g2d.drawRect(bounds.x, bounds.y, bounds.width, bounds.height);
@@ -78,6 +83,8 @@ public class MenuScreen {
                     bounds.x + (bounds.width  - fm.stringWidth(text)) / 2,
                     bounds.y + (bounds.height + fm.getAscent() - fm.getDescent()) / 2);
         }
+
+        g2d.setTransform(old);
     }
 
     public void mouseClicked(int mouseX, int mouseY) {

@@ -17,8 +17,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-
 public class BattleScreen {
+
+    private static final float BTN_SCALE = 1.08f;
 
     private boolean showRoundStart  = false;
     private long    roundStartTime  = 0;
@@ -33,10 +34,10 @@ public class BattleScreen {
     private Map<String, BufferedImage> mapImages  = new HashMap<>();
     private BufferedImage battleBottomBg;
     private BufferedImage btnBasicImg, btnSkillImg, btnUltimateImg, btnRestImg;
-    private Map<String, BufferedImage> sprites    = new HashMap<>();
-    private Map<String, BufferedImage> bossSprites = new HashMap<>(); // NEW
-    private Map<String, URL>           gifUrls    = new HashMap<>();
-    private Map<String, ImageIcon>     idleIcons  = new HashMap<>();
+    private Map<String, BufferedImage> sprites     = new HashMap<>();
+    private Map<String, BufferedImage> bossSprites = new HashMap<>();
+    private Map<String, URL>           gifUrls     = new HashMap<>();
+    private Map<String, ImageIcon>     idleIcons   = new HashMap<>();
     private Font pixelFont;
 
     private ImageIcon attackerIcon;
@@ -51,13 +52,13 @@ public class BattleScreen {
     private boolean animationPlaying = false;
 
     private Character player1, player2;
-    private boolean isAiMode      = false;
-    private boolean isArcadeMode  = false;
-    private int arcadeRound       = 1;
-    private int arcadeMaxRounds   = 5;
-    private boolean playerTurn    = true;
+    private boolean isAiMode     = false;
+    private boolean isArcadeMode = false;
+    private int arcadeRound      = 1;
+    private int arcadeMaxRounds  = 5;
+    private boolean playerTurn   = true;
     private boolean waitingForInput = true;
-    private boolean battleOver    = false;
+    private boolean battleOver   = false;
 
     private List<String> battleLog = new ArrayList<>();
 
@@ -92,42 +93,29 @@ public class BattleScreen {
 
     private void drawRoundStartIndicator(Graphics2D g2d, int width, int height) {
         if (!showRoundStart) return;
-
         long elapsed = System.currentTimeMillis() - roundStartTime;
-
         if (elapsed >= ROUND_INDICATOR_MS) {
-            showRoundStart   = false;
-            waitingForInput  = true;
+            showRoundStart  = false;
+            waitingForInput = true;
             gamePanel.repaint();
             return;
         }
-
         float alpha;
-        if (elapsed < 300) {
-            alpha = elapsed / 300f;
-        } else if (elapsed > ROUND_INDICATOR_MS - 400) {
-            alpha = (ROUND_INDICATOR_MS - elapsed) / 400f;
-        } else {
-            alpha = 1f;
-        }
+        if (elapsed < 300)                         alpha = elapsed / 300f;
+        else if (elapsed > ROUND_INDICATOR_MS-400) alpha = (ROUND_INDICATOR_MS - elapsed) / 400f;
+        else                                        alpha = 1f;
         alpha = Math.max(0f, Math.min(1f, alpha));
 
-        float scale = elapsed < 400
-                ? 1f + (1f - elapsed / 400f) * 0.4f
-                : 1f;
+        float scale = elapsed < 400 ? 1f + (1f - elapsed / 400f) * 0.4f : 1f;
 
         g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha * 0.55f));
         g2d.setColor(Color.BLACK);
         g2d.fillRect(0, 0, width, height);
         g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha));
 
-        int cx = width  / 2;
-        int cy = height / 2;
-
+        int cx = width / 2, cy = height / 2;
         java.awt.geom.AffineTransform old = g2d.getTransform();
-        g2d.translate(cx, cy);
-        g2d.scale(scale, scale);
-        g2d.translate(-cx, -cy);
+        g2d.translate(cx, cy); g2d.scale(scale, scale); g2d.translate(-cx, -cy);
 
         Font roundFont = pixelFont.deriveFont((float) sf(width, 32));
         g2d.setFont(roundFont);
@@ -135,17 +123,12 @@ public class BattleScreen {
         String roundText = "ROUND  " + currentRound;
         int rx = cx - rfm.stringWidth(roundText) / 2;
         int ry = cy - (int)(height * 0.04);
-
-        g2d.setColor(new Color(0, 0, 0, 180));
-        g2d.drawString(roundText, rx + 3, ry + 3);
-        g2d.setColor(new Color(255, 215, 0));
-        g2d.drawString(roundText, rx, ry);
+        g2d.setColor(new Color(0,0,0,180)); g2d.drawString(roundText, rx+3, ry+3);
+        g2d.setColor(new Color(255,215,0)); g2d.drawString(roundText, rx, ry);
 
         int lineY = ry + (int)(height * 0.025);
-        g2d.setColor(new Color(255, 215, 0, 180));
-        g2d.setStroke(new BasicStroke(3));
-        g2d.drawLine(cx - rfm.stringWidth(roundText)/2, lineY,
-                cx + rfm.stringWidth(roundText)/2, lineY);
+        g2d.setColor(new Color(255,215,0,180)); g2d.setStroke(new BasicStroke(3));
+        g2d.drawLine(cx - rfm.stringWidth(roundText)/2, lineY, cx + rfm.stringWidth(roundText)/2, lineY);
         g2d.setStroke(new BasicStroke(1));
 
         Font fightFont = pixelFont.deriveFont((float) sf(width, 22));
@@ -153,18 +136,15 @@ public class BattleScreen {
         FontMetrics ffm = g2d.getFontMetrics();
         String fightText = elapsed > 600 ? "FIGHT!" : "";
         if (!fightText.isEmpty()) {
-            float fightAlpha = Math.min(1f, (elapsed - 600) / 200f);
-            g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER,
-                    Math.min(alpha, fightAlpha)));
-            int fx = cx - ffm.stringWidth(fightText) / 2;
-            int fy = ry + (int)(height * 0.08);
-            g2d.setColor(new Color(0, 0, 0, 180));
-            g2d.drawString(fightText, fx + 2, fy + 2);
-            g2d.setColor(new Color(255, 80, 80));
-            g2d.drawString(fightText, fx, fy);
+            float fa = Math.min(1f, (elapsed-600)/200f);
+            g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, Math.min(alpha,fa)));
+            int fx = cx - ffm.stringWidth(fightText)/2;
+            int fy = ry + (int)(height*0.08);
+            g2d.setColor(new Color(0,0,0,180)); g2d.drawString(fightText, fx+2, fy+2);
+            g2d.setColor(new Color(255,80,80));  g2d.drawString(fightText, fx, fy);
             g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha));
         }
-        // Draw round banner PNG if available
+
         BufferedImage banner = roundBanners.get(currentRound);
         if (banner != null) {
             g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha));
@@ -173,7 +153,6 @@ public class BattleScreen {
         }
         g2d.setTransform(old);
         g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1f));
-
         gamePanel.repaint();
     }
 
@@ -195,13 +174,12 @@ public class BattleScreen {
         mapImages.put("Poco",           tryLoadImage("/resources/potatocorner_map.png"));
         mapImages.put("Julies",         tryLoadImage("/resources/julies_map.png"));
 
-        battleBottomBg = tryLoadImage("/resources/battle_bottom_bg.png",
-                "/resources/bottom_panel.png");
-
+        battleBottomBg = tryLoadImage("/resources/battle_bottom_bg.png", "/resources/bottom_panel.png");
         btnBasicImg    = tryLoadImage("/resources/btn_basic.png");
         btnSkillImg    = tryLoadImage("/resources/btn_skill.png");
         btnUltimateImg = tryLoadImage("/resources/btn_ultimate.png");
         btnRestImg     = tryLoadImage("/resources/btn_rest.png");
+
         roundBanners.put(1, tryLoadImage("/resources/rounds/round1.png"));
         roundBanners.put(2, tryLoadImage("/resources/rounds/round2.png"));
         roundBanners.put(3, tryLoadImage("/resources/rounds/round3.png"));
@@ -211,8 +189,6 @@ public class BattleScreen {
         for (String n : charNames) {
             BufferedImage img = tryLoadImage("/resources/sprites/" + n + ".png");
             if (img != null) sprites.put(n, img);
-
-            // Load boss PNG
             BufferedImage bossImg = tryLoadImage("/resources/sprites/" + n + "/" + n + "_boss.png");
             if (bossImg != null) bossSprites.put(n, bossImg);
         }
@@ -220,8 +196,7 @@ public class BattleScreen {
         String[] suffixes = {"_idle","_basic","_skill","_ultimate","_hit"};
         for (String n : charNames) {
             for (String s : suffixes) {
-                String path = "/resources/sprites/" + n + "/" + n + s + ".gif";
-                URL url = getClass().getResource(path);
+                URL url = getClass().getResource("/resources/sprites/" + n + "/" + n + s + ".gif");
                 if (url != null) gifUrls.put(n + s, url);
             }
             URL idleUrl = gifUrls.get(n + "_idle");
@@ -243,25 +218,16 @@ public class BattleScreen {
         return null;
     }
 
-    private void setupAnimationLabels() {
-        attackerIcon = null;
-        defenderIcon = null;
-    }
+    private void setupAnimationLabels() { attackerIcon = null; defenderIcon = null; }
 
     public void startBattle(Character p1, Character p2,
-                            boolean aiMode, boolean arcadeMode,
-                            int round, int maxRounds) {
-        this.player1          = p1;
-        this.player2          = p2;
-        this.isAiMode         = aiMode;
-        this.isArcadeMode     = arcadeMode;
-        this.arcadeRound      = round;
-        this.arcadeMaxRounds  = maxRounds;
-        this.playerTurn       = true;
-        this.waitingForInput  = true;
-        this.battleOver       = false;
-        this.animationPlaying = false;
-        this.flashMessage     = "";
+                            boolean aiMode, boolean arcadeMode, int round, int maxRounds) {
+        this.player1 = p1; this.player2 = p2;
+        this.isAiMode = aiMode; this.isArcadeMode = arcadeMode;
+        this.arcadeRound = round; this.arcadeMaxRounds = maxRounds;
+        this.playerTurn = true; this.waitingForInput = true;
+        this.battleOver = false; this.animationPlaying = false;
+        this.flashMessage = "";
         this.battleLog.clear();
         hideAnimations();
         selectMap(p2, arcadeMode);
@@ -275,32 +241,26 @@ public class BattleScreen {
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING,      RenderingHints.VALUE_ANTIALIAS_ON);
         g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
 
-        hpBarH      = (int)(height * 0.18);
-        bottomH     = (int)(height * 0.30);
-        battleH     = height - hpBarH - bottomH;
-        battleAreaY = hpBarH;
-        bottomY     = hpBarH + battleH;
+        hpBarH = (int)(height*0.18); bottomH = (int)(height*0.30);
+        battleH = height - hpBarH - bottomH; battleAreaY = hpBarH; bottomY = hpBarH + battleH;
 
         drawBattleBackground(g2d, width, battleH);
 
         if (!animationPlaying) {
             drawSprites(g2d, width);
         } else {
-            if (attackerIcon != null) {
-                drawGif(g2d, attackerIcon, attackerAnimX, attackerAnimY,
-                        attackerAnimW, attackerAnimH, attackerFlip);
-            }
+            if (attackerIcon != null)
+                drawGif(g2d, attackerIcon, attackerAnimX, attackerAnimY, attackerAnimW, attackerAnimH, attackerFlip);
             if (defenderIcon != null) {
-                drawGif(g2d, defenderIcon, defenderAnimX, defenderAnimY,
-                        defenderAnimW, defenderAnimH, defenderFlip);
+                drawGif(g2d, defenderIcon, defenderAnimX, defenderAnimY, defenderAnimW, defenderAnimH, defenderFlip);
                 if (hitFlashTarget != null && hitFlashStartMs > 0) {
                     long elapsed = System.currentTimeMillis() - hitFlashStartMs;
                     if (elapsed < HIT_FLASH_DURATION_MS) {
                         float progress = (float) elapsed / HIT_FLASH_DURATION_MS;
-                        int alpha = (int)(180 * (1f - progress));
-                        g2d.setColor(new Color(255, 0, 0, alpha));
+                        int a = (int)(180 * (1f - progress));
+                        g2d.setColor(new Color(255,0,0,a));
                         g2d.fillRect(defenderAnimX, defenderAnimY, defenderAnimW, defenderAnimH);
-                        g2d.setColor(new Color(255, 0, 0, Math.min(255, alpha + 60)));
+                        g2d.setColor(new Color(255,0,0,Math.min(255,a+60)));
                         g2d.setStroke(new BasicStroke(4));
                         g2d.drawRect(defenderAnimX, defenderAnimY, defenderAnimW, defenderAnimH);
                         g2d.setStroke(new BasicStroke(1));
@@ -318,8 +278,7 @@ public class BattleScreen {
 
     private void selectMap(Character enemy, boolean arcadeMode) {
         if (arcadeMode) {
-            String key = getSpriteKey(enemy);
-            currentMap = mapImages.get(key);
+            currentMap = mapImages.get(getSpriteKey(enemy));
             if (currentMap == null) currentMap = getRandomMap();
         } else {
             currentMap = getRandomMap();
@@ -327,9 +286,8 @@ public class BattleScreen {
     }
 
     private BufferedImage getRandomMap() {
-        java.util.List<BufferedImage> available = new java.util.ArrayList<>();
-        for (BufferedImage img : mapImages.values())
-            if (img != null) available.add(img);
+        List<BufferedImage> available = new ArrayList<>();
+        for (BufferedImage img : mapImages.values()) if (img != null) available.add(img);
         if (available.isEmpty()) return null;
         return available.get((int)(Math.random() * available.size()));
     }
@@ -338,17 +296,11 @@ public class BattleScreen {
         if (currentMap != null) {
             g2d.drawImage(currentMap, 0, battleAreaY, width, h, null);
         } else {
-            GradientPaint sky = new GradientPaint(
-                    0, battleAreaY, new Color(100,160,230),
-                    0, battleAreaY + h * 2/3, new Color(160,210,255));
-            g2d.setPaint(sky);
-            g2d.fillRect(0, battleAreaY, width, h);
+            GradientPaint sky = new GradientPaint(0, battleAreaY, new Color(100,160,230),
+                    0, battleAreaY + h*2/3, new Color(160,210,255));
+            g2d.setPaint(sky); g2d.fillRect(0, battleAreaY, width, h);
             g2d.setColor(new Color(80,60,40));
-            g2d.fillRect(0, battleAreaY + (int)(h * 0.65), width, (int)(h * 0.35));
-            g2d.setColor(new Color(60,45,30));
-            g2d.setStroke(new BasicStroke(3));
-            g2d.drawLine(0, battleAreaY + (int)(h*0.65), width, battleAreaY + (int)(h*0.65));
-            g2d.setStroke(new BasicStroke(1));
+            g2d.fillRect(0, battleAreaY+(int)(h*0.65), width, (int)(h*0.35));
         }
     }
 
@@ -356,54 +308,32 @@ public class BattleScreen {
         int spriteH = (int)(battleH * 0.85);
         int spriteW = spriteH;
         int groundY = battleAreaY + (int)(battleH * 1.00);
-
-        int p1X = (int)(width * 0.08);
-        int p1Y = groundY - spriteH;
-        drawIdleSprite(g2d, player1, p1X, p1Y, spriteW, spriteH, false);
-
-        int p2X = (int)(width * 0.64);
-        int p2Y = groundY - spriteH;
-        drawIdleSprite(g2d, player2, p2X, p2Y, spriteW, spriteH, true);
+        drawIdleSprite(g2d, player1, (int)(width*0.08), groundY-spriteH, spriteW, spriteH, false);
+        drawIdleSprite(g2d, player2, (int)(width*0.64), groundY-spriteH, spriteW, spriteH, true);
     }
 
-    private void drawIdleSprite(Graphics2D g2d, Character ch,
-                                int x, int y, int w, int h, boolean flip) {
+    private void drawIdleSprite(Graphics2D g2d, Character ch, int x, int y, int w, int h, boolean flip) {
         String key = getSpriteKey(ch);
-
-        // Normal idle GIF
         ImageIcon idleIcon = idleIcons.get(key);
         if (idleIcon != null) {
             drawGif(g2d, idleIcon, x, y, w, h, flip);
         } else {
             BufferedImage sprite = sprites.get(key);
             if (sprite != null) {
-                if (flip) {
-                    g2d.drawImage(sprite,
-                            x + w, y, x, y + h,
-                            0, 0, sprite.getWidth(), sprite.getHeight(), null);
-                } else {
-                    g2d.drawImage(sprite, x, y, w, h, null);
-                }
+                if (flip) g2d.drawImage(sprite, x+w, y, x, y+h, 0, 0, sprite.getWidth(), sprite.getHeight(), null);
+                else      g2d.drawImage(sprite, x, y, w, h, null);
             } else {
                 g2d.setColor(flip ? new Color(200,80,80,180) : new Color(80,120,200,180));
-                g2d.fillRoundRect(x + w/4, y + h/6, w/2, h*5/6, 12, 12);
-                g2d.fillOval(x + w/3, y, w/3, w/3);
-                g2d.setFont(pixelFont.deriveFont((float) Math.max(7, w/8)));
-                g2d.setColor(Color.WHITE);
-                FontMetrics fm = g2d.getFontMetrics();
-                String label = ch.getName().length() > 6
-                        ? ch.getName().substring(0, 6) : ch.getName();
-                g2d.drawString(label, x + w/2 - 20, y + h/2);
+                g2d.fillRoundRect(x+w/4, y+h/6, w/2, h*5/6, 12, 12);
+                g2d.fillOval(x+w/3, y, w/3, w/3);
             }
         }
     }
 
-    private void drawGif(Graphics2D g2d, ImageIcon icon,
-                         int x, int y, int w, int h, boolean flip) {
+    private void drawGif(Graphics2D g2d, ImageIcon icon, int x, int y, int w, int h, boolean flip) {
         if (flip) {
             java.awt.geom.AffineTransform old = g2d.getTransform();
-            g2d.translate(x + w, y);
-            g2d.scale(-1, 1);
+            g2d.translate(x+w, y); g2d.scale(-1,1);
             g2d.drawImage(icon.getImage(), 0, 0, w, h, gamePanel);
             g2d.setTransform(old);
         } else {
@@ -412,272 +342,157 @@ public class BattleScreen {
     }
 
     private void drawHpBars(Graphics2D g2d, int width) {
-        g2d.setColor(new Color(0,0,0,180));
-        g2d.fillRect(0, 0, width, hpBarH);
-        g2d.setColor(new Color(180,140,0));
-        g2d.setStroke(new BasicStroke(3));
-        g2d.drawLine(0, hpBarH, width, hpBarH);
-        g2d.setStroke(new BasicStroke(1));
+        g2d.setColor(new Color(0,0,0,180)); g2d.fillRect(0, 0, width, hpBarH);
+        g2d.setColor(new Color(180,140,0)); g2d.setStroke(new BasicStroke(3));
+        g2d.drawLine(0, hpBarH, width, hpBarH); g2d.setStroke(new BasicStroke(1));
 
-        int portraitSize = (int)(hpBarH * 0.62);
-        int padY         = (hpBarH - portraitSize) / 2;
-        int barH         = (int)(portraitSize * 0.28);
+        int portraitSize = (int)(hpBarH*0.62);
+        int padY = (hpBarH - portraitSize) / 2;
+        int barH = (int)(portraitSize*0.28);
+        int centreZone  = (int)(width*0.18);
+        int centreLeft  = width/2 - centreZone/2;
+        int centreRight = width/2 + centreZone/2;
+        int pad = (int)(width*0.01);
 
-        int centreZone  = (int)(width * 0.18);
-        int centreLeft  = width / 2 - centreZone / 2;
-        int centreRight = width / 2 + centreZone / 2;
-
-        int pad     = (int)(width * 0.01);
-        int p1PortX = pad;
-        int p1BarX  = p1PortX + portraitSize + pad;
-        int p1BarW  = centreLeft - p1BarX - pad;
-        drawPortrait(g2d, player1, p1PortX, padY, portraitSize, false);
-        drawHpBarBlock(g2d, player1, p1BarX,
-                padY + (int)(portraitSize*0.25),
-                padY + (int)(portraitSize*0.45),
-                padY + (int)(portraitSize*0.72),
-                p1BarW, barH, width);
+        drawPortrait(g2d, player1, pad, padY, portraitSize, false);
+        drawHpBarBlock(g2d, player1, pad+portraitSize+pad,
+                padY+(int)(portraitSize*0.25), padY+(int)(portraitSize*0.45), padY+(int)(portraitSize*0.72),
+                centreLeft-(pad+portraitSize+pad)-pad, barH, width);
 
         int p2PortX = width - pad - portraitSize;
-        int p2BarW  = p2PortX - pad - centreRight - pad;
-        int p2BarX  = centreRight + pad;
         drawPortrait(g2d, player2, p2PortX, padY, portraitSize, true);
-        drawHpBarBlock(g2d, player2, p2BarX,
-                padY + (int)(portraitSize*0.25),
-                padY + (int)(portraitSize*0.45),
-                padY + (int)(portraitSize*0.72),
-                p2BarW, barH, width);
+        drawHpBarBlock(g2d, player2, centreRight+pad,
+                padY+(int)(portraitSize*0.25), padY+(int)(portraitSize*0.45), padY+(int)(portraitSize*0.72),
+                p2PortX-pad-centreRight-pad, barH, width);
 
-        // Nav buttons drawn FIRST so pips appear on top
         NavButtons.drawBattle(g2d, width, hpBarH, isArcadeMode);
-
-        // Win pips for PVP/AI only, drawn AFTER nav buttons (below them visually)
-        if (!isArcadeMode) {
-            drawWinPips(g2d, width, hpBarH);
-        }
-
-        battleSettingsBtn    = null;
-        battleLeaderboardBtn = null;
+        if (!isArcadeMode) drawWinPips(g2d, width, hpBarH);
+        battleSettingsBtn = null; battleLeaderboardBtn = null;
     }
 
     private void drawWinPips(Graphics2D g2d, int width, int hpH) {
         MatchManager mm = gamePanel.getMatchManager();
-        int p1Wins = mm.getP1Wins();
-        int p2Wins = mm.getP2Wins();
-        int needed = MatchManager.ROUNDS_TO_WIN;
-
-        int pipR    = Math.max(4, (int)(hpH * 0.09));
-        int pipDiam = pipR * 2;
-        int gap     = (int)(pipR * 0.9);
-        int cx      = width / 2;
-
-        // Pips positioned in the lower portion of the HP bar, beneath nav buttons
-        int cy = (int)(hpH * 0.50);
-
-        // P1 pips: left of centre
+        int p1Wins = mm.getP1Wins(), p2Wins = mm.getP2Wins(), needed = MatchManager.ROUNDS_TO_WIN;
+        int pipR = Math.max(4, (int)(hpH*0.09)), pipDiam = pipR*2, gap = (int)(pipR*0.9);
+        int cx = width/2, cy = (int)(hpH*0.50);
         for (int i = 0; i < needed; i++) {
-            int px = cx - gap - pipDiam - i * (pipDiam + gap);
-            int py = cy - pipR;
-            if (i < p1Wins) {
-                g2d.setColor(new Color(80, 220, 80));
-                g2d.fillOval(px, py, pipDiam, pipDiam);
-            } else {
-                g2d.setColor(new Color(80, 220, 80, 80));
-                g2d.setStroke(new BasicStroke(1.5f));
-                g2d.drawOval(px, py, pipDiam, pipDiam);
-                g2d.setStroke(new BasicStroke(1));
-            }
+            int px = cx - gap - pipDiam - i*(pipDiam+gap), py = cy - pipR;
+            if (i < p1Wins) { g2d.setColor(new Color(80,220,80)); g2d.fillOval(px,py,pipDiam,pipDiam); }
+            else { g2d.setColor(new Color(80,220,80,80)); g2d.setStroke(new BasicStroke(1.5f)); g2d.drawOval(px,py,pipDiam,pipDiam); g2d.setStroke(new BasicStroke(1)); }
         }
-
-        // P2 pips: right of centre
         for (int i = 0; i < needed; i++) {
-            int px = cx + gap + i * (pipDiam + gap);
-            int py = cy - pipR;
-            if (i < p2Wins) {
-                g2d.setColor(new Color(220, 80, 80));
-                g2d.fillOval(px, py, pipDiam, pipDiam);
-            } else {
-                g2d.setColor(new Color(220, 80, 80, 80));
-                g2d.setStroke(new BasicStroke(1.5f));
-                g2d.drawOval(px, py, pipDiam, pipDiam);
-                g2d.setStroke(new BasicStroke(1));
-            }
+            int px = cx + gap + i*(pipDiam+gap), py = cy - pipR;
+            if (i < p2Wins) { g2d.setColor(new Color(220,80,80)); g2d.fillOval(px,py,pipDiam,pipDiam); }
+            else { g2d.setColor(new Color(220,80,80,80)); g2d.setStroke(new BasicStroke(1.5f)); g2d.drawOval(px,py,pipDiam,pipDiam); g2d.setStroke(new BasicStroke(1)); }
         }
     }
 
-    private void drawNavBtn(Graphics2D g2d, Rectangle r, String label) {
-        g2d.setColor(new Color(40, 40, 80, 200));
-        g2d.fillRoundRect(r.x, r.y, r.width, r.height, 4, 4);
-        g2d.setColor(new Color(180, 160, 255, 180));
-        g2d.setStroke(new BasicStroke(1f));
-        g2d.drawRoundRect(r.x, r.y, r.width, r.height, 4, 4);
-        g2d.setFont(new Font("Monospaced", Font.BOLD, Math.max(7, r.height / 2)));
-        FontMetrics fm = g2d.getFontMetrics();
-        g2d.setColor(Color.WHITE);
-        g2d.drawString(label,
-                r.x + (r.width  - fm.stringWidth(label)) / 2,
-                r.y + (r.height + fm.getAscent() - fm.getDescent()) / 2);
-    }
-
-    private void drawPortrait(Graphics2D g2d, Character ch,
-                              int x, int y, int size, boolean flip) {
-        g2d.setColor(new Color(180,140,0));
-        g2d.setStroke(new BasicStroke(3));
-        int[] px = {x+size/2, x+size, x+size/2, x};
-        int[] py = {y, y+size/2, y+size, y+size/2};
-        g2d.fillPolygon(px, py, 4);
-        g2d.setColor(new Color(255,215,0));
-        g2d.drawPolygon(px, py, 4);
+    private void drawPortrait(Graphics2D g2d, Character ch, int x, int y, int size, boolean flip) {
+        g2d.setColor(new Color(180,140,0)); g2d.setStroke(new BasicStroke(3));
+        int[] px = {x+size/2,x+size,x+size/2,x}, py = {y,y+size/2,y+size,y+size/2};
+        g2d.fillPolygon(px,py,4); g2d.setColor(new Color(255,215,0)); g2d.drawPolygon(px,py,4);
         g2d.setStroke(new BasicStroke(1));
-
         Shape oldClip = g2d.getClip();
-        g2d.setClip(new java.awt.geom.Ellipse2D.Float(
-                x + size*0.15f, y + size*0.15f, size*0.70f, size*0.70f));
-
+        g2d.setClip(new java.awt.geom.Ellipse2D.Float(x+size*0.15f,y+size*0.15f,size*0.70f,size*0.70f));
         String key = getSpriteKey(ch);
-        int ix = x + (int)(size*0.15), iy = y + (int)(size*0.15), is = (int)(size*0.70);
-
-        // Use boss icon in arcade mode for opponent, normal sprite otherwise
+        int ix = x+(int)(size*0.15), iy = y+(int)(size*0.15), is = (int)(size*0.70);
         BufferedImage portrait = (isArcadeMode && !ch.isPlayer() && bossSprites.containsKey(key))
-                ? bossSprites.get(key)
-                : sprites.get(key);
-
+                ? bossSprites.get(key) : sprites.get(key);
         if (portrait != null) {
-            if (flip)
-                g2d.drawImage(portrait, ix+is, iy, ix, iy+is,
-                        0, 0, portrait.getWidth(), portrait.getHeight(), null);
-            else
-                g2d.drawImage(portrait, ix, iy, is, is, null);
-        } else {
-            g2d.setColor(new Color(100,80,160));
-            g2d.fillRect(ix, iy, is, is);
-        }
+            if (flip) g2d.drawImage(portrait, ix+is, iy, ix, iy+is, 0,0,portrait.getWidth(),portrait.getHeight(),null);
+            else      g2d.drawImage(portrait, ix, iy, is, is, null);
+        } else { g2d.setColor(new Color(100,80,160)); g2d.fillRect(ix,iy,is,is); }
         g2d.setClip(oldClip);
     }
 
     private void drawHpBarBlock(Graphics2D g2d, Character ch,
-                                int x, int nameY, int hpY, int mpY,
-                                int barW, int barH, int screenW) {
-        g2d.setFont(pixelFont.deriveFont((float) sf(screenW, 10)));
-        g2d.setColor(Color.WHITE);
+                                int x, int nameY, int hpY, int mpY, int barW, int barH, int screenW) {
+        g2d.setFont(pixelFont.deriveFont((float) sf(screenW,10))); g2d.setColor(Color.WHITE);
         g2d.drawString(ch.getName(), x, nameY);
-        drawBar(g2d, x, hpY, barW, barH, ch.getHealth(),      ch.getMaxHealth(), new Color(240,60,60),  new Color(80,200,80),  "HP");
-        drawBar(g2d, x, mpY, barW, barH, ch.getCurrentMana(), ch.getMaxMana(),   new Color(40,60,160),  new Color(80,140,255), "MP");
+        drawBar(g2d,x,hpY,barW,barH,ch.getHealth(),ch.getMaxHealth(),new Color(240,60,60),new Color(80,200,80),"HP");
+        drawBar(g2d,x,mpY,barW,barH,ch.getCurrentMana(),ch.getMaxMana(),new Color(40,60,160),new Color(80,140,255),"MP");
     }
 
     private void drawBar(Graphics2D g2d, int x, int y, int w, int h,
                          int cur, int max, Color empty, Color fill, String label) {
         float ratio = max > 0 ? (float)cur/max : 0f;
-        g2d.setColor(empty);
-        g2d.fillRoundRect(x, y, w, h, 4, 4);
+        g2d.setColor(empty); g2d.fillRoundRect(x,y,w,h,4,4);
         Color fc = fill;
-        if (label.equals("HP")) {
-            if (ratio < 0.25f)      fc = new Color(220,60,60);
-            else if (ratio < 0.50f) fc = new Color(220,180,60);
-        }
-        g2d.setColor(fc);
-        g2d.fillRoundRect(x, y, (int)(w*ratio), h, 4, 4);
-        g2d.setColor(new Color(255,255,255,60));
-        g2d.fillRoundRect(x, y, (int)(w*ratio), h/2, 4, 4);
-        g2d.setColor(new Color(0,0,0,120));
-        g2d.drawRoundRect(x, y, w, h, 4, 4);
-        g2d.setFont(pixelFont.deriveFont((float)Math.max(6, h-1)));
-        g2d.setColor(Color.WHITE);
+        if (label.equals("HP")) { if (ratio<0.25f) fc=new Color(220,60,60); else if(ratio<0.50f) fc=new Color(220,180,60); }
+        g2d.setColor(fc); g2d.fillRoundRect(x,y,(int)(w*ratio),h,4,4);
+        g2d.setColor(new Color(255,255,255,60)); g2d.fillRoundRect(x,y,(int)(w*ratio),h/2,4,4);
+        g2d.setColor(new Color(0,0,0,120)); g2d.drawRoundRect(x,y,w,h,4,4);
+        g2d.setFont(pixelFont.deriveFont((float)Math.max(6,h-1))); g2d.setColor(Color.WHITE);
         g2d.drawString(label+" "+cur+"/"+max, x+3, y+h-1);
     }
 
     private void drawRoundLabel(Graphics2D g2d, int width) {
-        int round = isArcadeMode
-                ? arcadeRound
-                : gamePanel.getMatchManager().getCurrentRound();
+        int round = isArcadeMode ? arcadeRound : gamePanel.getMatchManager().getCurrentRound();
         String txt = "ROUND " + round;
-        g2d.setFont(pixelFont.deriveFont((float) sf(width, 14)));
+        g2d.setFont(pixelFont.deriveFont((float) sf(width,14)));
         FontMetrics fm = g2d.getFontMetrics();
-        int rx = (width - fm.stringWidth(txt)) / 2;
-        int ry = (int)(hpBarH * 0.25);
-        g2d.setColor(new Color(0,0,0,150));
-        g2d.drawString(txt, rx+2, ry+2);
-        g2d.setColor(new Color(255,215,0));
-        g2d.drawString(txt, rx, ry);
+        int rx = (width - fm.stringWidth(txt))/2, ry = (int)(hpBarH*0.25);
+        g2d.setColor(new Color(0,0,0,150)); g2d.drawString(txt, rx+2, ry+2);
+        g2d.setColor(new Color(255,215,0));  g2d.drawString(txt, rx, ry);
     }
 
     private void drawBottomPanel(Graphics2D g2d, int width, int height) {
-        if (battleBottomBg != null) {
-            g2d.drawImage(battleBottomBg, 0, bottomY, width, bottomH, null);
-        } else {
-            g2d.setColor(new Color(30,25,60));
-            g2d.fillRect(0, bottomY, width, bottomH);
-            g2d.setColor(new Color(180,140,0));
-            g2d.setStroke(new BasicStroke(3));
-            g2d.drawLine(0, bottomY, width, bottomY);
-            g2d.setStroke(new BasicStroke(1));
+        if (battleBottomBg != null) g2d.drawImage(battleBottomBg,0,bottomY,width,bottomH,null);
+        else {
+            g2d.setColor(new Color(30,25,60)); g2d.fillRect(0,bottomY,width,bottomH);
+            g2d.setColor(new Color(180,140,0)); g2d.setStroke(new BasicStroke(3));
+            g2d.drawLine(0,bottomY,width,bottomY); g2d.setStroke(new BasicStroke(1));
         }
-
-        int logW     = (int)(width * 0.44);
-        int btnAreaX = logW + (int)(width * 0.02);
-        int btnAreaW = width - btnAreaX - (int)(width * 0.02);
-        int pad      = (int)(bottomH * 0.06);
-
-        drawLogBox(g2d, (int)(width*0.01), bottomY + pad, logW, bottomH - pad*2, width);
+        int logW = (int)(width*0.44), btnAreaX = logW+(int)(width*0.02);
+        int btnAreaW = width-btnAreaX-(int)(width*0.02), pad = (int)(bottomH*0.06);
+        drawLogBox(g2d,(int)(width*0.01),bottomY+pad,logW,bottomH-pad*2,width);
 
         boolean canAct = !battleOver && waitingForInput && !animationPlaying
                 && (playerTurn || (!isAiMode && !isArcadeMode));
-
         if (canAct) {
-            drawAttackButtons(g2d, btnAreaX, bottomY + pad, btnAreaW, bottomH - pad*2, width);
+            drawAttackButtons(g2d, btnAreaX, bottomY+pad, btnAreaW, bottomH-pad*2, width);
         } else if (!battleOver) {
-            g2d.setFont(pixelFont.deriveFont((float) sf(width, 10)));
+            g2d.setFont(pixelFont.deriveFont((float) sf(width,10)));
             g2d.setColor(new Color(180,160,220));
             String msg = animationPlaying ? "..." :
-                    (!playerTurn && (isAiMode||isArcadeMode))
-                            ? player2.getName() + " is thinking..." : "";
-            if (!msg.isEmpty())
-                g2d.drawString(msg, btnAreaX + 8, bottomY + bottomH/2);
+                    (!playerTurn && (isAiMode||isArcadeMode)) ? player2.getName()+" is thinking..." : "";
+            if (!msg.isEmpty()) g2d.drawString(msg, btnAreaX+8, bottomY+bottomH/2);
         }
     }
 
     private void drawLogBox(Graphics2D g2d, int x, int y, int w, int h, int screenW) {
-        g2d.setColor(Color.WHITE);
-        g2d.fillRoundRect(x, y, w, h, 8, 8);
-        g2d.setColor(new Color(40,30,80));
-        g2d.setStroke(new BasicStroke(3));
-        g2d.drawRoundRect(x, y, w, h, 8, 8);
-        g2d.setStroke(new BasicStroke(1));
-
-        g2d.setFont(pixelFont.deriveFont((float) sf(screenW, 10)));
-        g2d.setColor(new Color(30,20,50));
+        g2d.setColor(Color.WHITE); g2d.fillRoundRect(x,y,w,h,8,8);
+        g2d.setColor(new Color(40,30,80)); g2d.setStroke(new BasicStroke(3));
+        g2d.drawRoundRect(x,y,w,h,8,8); g2d.setStroke(new BasicStroke(1));
+        g2d.setFont(pixelFont.deriveFont((float) sf(screenW,10))); g2d.setColor(new Color(30,20,50));
         FontMetrics fm = g2d.getFontMetrics();
-        int lineH    = fm.getHeight();
-        int pad      = (int)(h * 0.10);
-        int maxLines = (h - pad*2) / lineH;
-
-        int start = Math.max(0, battleLog.size() - maxLines);
-        for (int i = start; i < battleLog.size(); i++) {
-            g2d.drawString(battleLog.get(i), x + pad, y + pad + (i - start + 1) * lineH);
-        }
+        int lineH = fm.getHeight(), pad = (int)(h*0.10), maxLines = (h-pad*2)/lineH;
+        int start = Math.max(0, battleLog.size()-maxLines);
+        for (int i = start; i < battleLog.size(); i++)
+            g2d.drawString(battleLog.get(i), x+pad, y+pad+(i-start+1)*lineH);
     }
 
     private void drawAttackButtons(Graphics2D g2d, int x, int y, int w, int h, int screenW) {
-        int gap  = (int)(w * 0.04);
-        int btnW = (w - gap) / 2;
-        int btnH = (h - gap) / 2;
+        int gap  = (int)(w*0.04);
+        int btnW = (w-gap)/2;
+        int btnH = (h-gap)/2;
 
-        Character current  = playerTurn ? player1 : player2;
+        Character current = playerTurn ? player1 : player2;
         boolean canSkill = current.getCurrentMana() >= 30;
         boolean canUlti  = current.getCurrentMana() >= 50;
 
-        btnBasic    = new Rectangle(x,              y,              btnW, btnH);
-        btnSkill    = new Rectangle(x + btnW + gap, y,              btnW, btnH);
-        btnUltimate = new Rectangle(x,              y + btnH + gap, btnW, btnH);
-        btnRest     = new Rectangle(x + btnW + gap, y + btnH + gap, btnW, btnH);
+        btnBasic    = new Rectangle(x,            y,            btnW, btnH);
+        btnSkill    = new Rectangle(x+btnW+gap,   y,            btnW, btnH);
+        btnUltimate = new Rectangle(x,            y+btnH+gap,   btnW, btnH);
+        btnRest     = new Rectangle(x+btnW+gap,   y+btnH+gap,   btnW, btnH);
 
-        drawAttackBtn(g2d, btnBasic,    btnBasicImg,    new Color(180,40,40),   new Color(220,70,70),
+        drawAttackBtn(g2d, btnBasic,    btnBasicImg,    new Color(180,40,40),  new Color(220,70,70),
                 current.getBasicAttackName(),    "0 MP",  hoveredBtn==0, true,     screenW);
-        drawAttackBtn(g2d, btnSkill,    btnSkillImg,    new Color(40,140,60),   new Color(70,180,90),
+        drawAttackBtn(g2d, btnSkill,    btnSkillImg,    new Color(40,140,60),  new Color(70,180,90),
                 current.getSkillAttackName(),    "30 MP", hoveredBtn==1, canSkill, screenW);
-        drawAttackBtn(g2d, btnUltimate, btnUltimateImg, new Color(160,130,20),  new Color(200,170,40),
+        drawAttackBtn(g2d, btnUltimate, btnUltimateImg, new Color(160,130,20), new Color(200,170,40),
                 current.getUltimateAttackName(), "50 MP", hoveredBtn==2, canUlti,  screenW);
-        drawAttackBtn(g2d, btnRest,     btnRestImg,     new Color(40,80,180),   new Color(70,120,220),
+        drawAttackBtn(g2d, btnRest,     btnRestImg,     new Color(40,80,180),  new Color(70,120,220),
                 "Rest",                          "Heal",  hoveredBtn==3, true,     screenW);
     }
 
@@ -685,141 +500,103 @@ public class BattleScreen {
                                Color base, Color hover,
                                String name, String cost,
                                boolean isHovered, boolean canUse, int screenW) {
+        java.awt.geom.AffineTransform old = g2d.getTransform();
+
+        // Scale up on hover (centered on button)
+        if (isHovered && canUse) {
+            int cx = r.x + r.width  / 2;
+            int cy = r.y + r.height / 2;
+            g2d.translate(cx, cy);
+            g2d.scale(BTN_SCALE, BTN_SCALE);
+            g2d.translate(-cx, -cy);
+        }
+
         if (img != null) {
             g2d.drawImage(img, r.x, r.y, r.width, r.height, null);
-            if (isHovered && canUse) {
-                g2d.setColor(new Color(255,215,0,100));
-                g2d.fillRoundRect(r.x, r.y, r.width, r.height, 10, 10);
-                g2d.setColor(new Color(255,215,0,220));
-                g2d.setStroke(new BasicStroke(3));
-                g2d.drawRoundRect(r.x-2, r.y-2, r.width+4, r.height+4, 12, 12);
-                g2d.setStroke(new BasicStroke(1));
-            }
             if (!canUse) {
                 g2d.setColor(new Color(0,0,0,100));
                 g2d.fillRoundRect(r.x, r.y, r.width, r.height, 10, 10);
             }
         } else {
             Color bg = !canUse ? new Color(60,55,70) : (isHovered ? hover : base);
-            g2d.setColor(bg);
-            g2d.fillRoundRect(r.x, r.y, r.width, r.height, 10, 10);
-            g2d.setColor(isHovered && canUse ? new Color(255,215,0) : new Color(0,0,0,120));
-            g2d.setStroke(new BasicStroke(isHovered && canUse ? 3 : 1.5f));
-            g2d.drawRoundRect(r.x, r.y, r.width, r.height, 10, 10);
-            g2d.setStroke(new BasicStroke(1));
-
-            g2d.setFont(pixelFont.deriveFont((float) sf(screenW, 10)));
+            g2d.setColor(bg); g2d.fillRoundRect(r.x, r.y, r.width, r.height, 10, 10);
+            g2d.setColor(new Color(0,0,0,120)); g2d.setStroke(new BasicStroke(1.5f));
+            g2d.drawRoundRect(r.x, r.y, r.width, r.height, 10, 10); g2d.setStroke(new BasicStroke(1));
+            g2d.setFont(pixelFont.deriveFont((float) sf(screenW,10)));
             g2d.setColor(canUse ? Color.WHITE : new Color(140,130,150));
             FontMetrics fm = g2d.getFontMetrics();
-            String display = fm.stringWidth(name) > r.width-8
-                    ? name.substring(0, Math.min(name.length(), 11)) + "…" : name;
-            g2d.drawString(display,
-                    r.x + (r.width - fm.stringWidth(display))/2,
-                    r.y + (int)(r.height*0.42));
-
-            g2d.setFont(pixelFont.deriveFont((float) sf(screenW, 8)));
+            String display = fm.stringWidth(name) > r.width-8 ? name.substring(0,Math.min(name.length(),11))+"…" : name;
+            g2d.drawString(display, r.x+(r.width-fm.stringWidth(display))/2, r.y+(int)(r.height*0.42));
+            g2d.setFont(pixelFont.deriveFont((float) sf(screenW,8)));
             g2d.setColor(canUse ? new Color(220,220,180) : new Color(120,110,130));
             fm = g2d.getFontMetrics();
-            g2d.drawString(cost,
-                    r.x + (r.width - fm.stringWidth(cost))/2,
-                    r.y + (int)(r.height*0.78));
+            g2d.drawString(cost, r.x+(r.width-fm.stringWidth(cost))/2, r.y+(int)(r.height*0.78));
         }
+
+        g2d.setTransform(old);
     }
 
     private void drawFlash(Graphics2D g2d, int width, int height) {
         if (flashMessage.isEmpty()) return;
         long elapsed = System.currentTimeMillis() - flashTime;
         if (elapsed >= FLASH_MS) { flashMessage = ""; return; }
-        float alpha = elapsed < FLASH_MS*0.6
-                ? 1f : 1f - (float)(elapsed - FLASH_MS*0.6)/(float)(FLASH_MS*0.4);
+        float alpha = elapsed < FLASH_MS*0.6 ? 1f : 1f-(float)(elapsed-FLASH_MS*0.6)/(float)(FLASH_MS*0.4);
         alpha = Math.max(0f, alpha);
         g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha));
-        g2d.setFont(pixelFont.deriveFont((float) sf(width, 22)));
+        g2d.setFont(pixelFont.deriveFont((float) sf(width,22)));
         FontMetrics fm = g2d.getFontMetrics();
-        int fx = (width - fm.stringWidth(flashMessage))/2;
-        int fy = (int)(height * 0.50);
-        g2d.setColor(new Color(0,0,0,(int)(180*alpha)));
-        g2d.drawString(flashMessage, fx+2, fy+2);
-        g2d.setColor(new Color(255,215,0,(int)(255*alpha)));
-        g2d.drawString(flashMessage, fx, fy);
-        g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1f));
+        int fx = (width-fm.stringWidth(flashMessage))/2, fy = (int)(height*0.50);
+        g2d.setColor(new Color(0,0,0,(int)(180*alpha))); g2d.drawString(flashMessage,fx+2,fy+2);
+        g2d.setColor(new Color(255,215,0,(int)(255*alpha))); g2d.drawString(flashMessage,fx,fy);
+        g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER,1f));
         gamePanel.repaint();
     }
 
     private void playAnimation(Character attacker, Character defender, int skillChoice) {
-        String attackerKey = getSpriteKey(attacker);
-        String defenderKey = getSpriteKey(defender);
+        String attackerKey = getSpriteKey(attacker), defenderKey = getSpriteKey(defender);
+        String attackSuffix = skillChoice==1?"_basic":skillChoice==2?"_skill":skillChoice==3?"_ultimate":null;
+        URL attackerGif = attackSuffix!=null ? gifUrls.get(attackerKey+attackSuffix) : null;
+        URL defenderGif = gifUrls.get(defenderKey+"_hit");
 
-        String attackSuffix = skillChoice == 1 ? "_basic"
-                : skillChoice == 2 ? "_skill"
-                : skillChoice == 3 ? "_ultimate"
-                : null;
-
-        URL attackerGif = attackSuffix != null ? gifUrls.get(attackerKey + attackSuffix) : null;
-        URL defenderGif = gifUrls.get(defenderKey + "_hit");
-
-        int panelW = gamePanel.getWidth();
-        int panelH = gamePanel.getHeight();
-
-        int hpH     = (int)(panelH * 0.18);
-        int botH    = (int)(panelH * 0.30);
-        int batH    = panelH - hpH - botH;
-        int spriteH = (int)(batH * 0.85);
-        int spriteW = spriteH;
-        int groundY = hpH + (int)(batH * 1.00);
-
-        boolean attackerIsP1 = (attacker == player1);
-
-        int idleX    = attackerIsP1 ? (int)(panelW * 0.08) : (int)(panelW * 0.62);
-        int targetX  = attackerIsP1 ? (int)(panelW * 0.45) : (int)(panelW * 0.20);
-        int defenderX = attackerIsP1 ? (int)(panelW * 0.62) : (int)(panelW * 0.08);
-        int spriteY   = groundY - spriteH;
+        int panelW=gamePanel.getWidth(), panelH=gamePanel.getHeight();
+        int hpH=(int)(panelH*0.18), botH=(int)(panelH*0.30), batH=panelH-hpH-botH;
+        int spriteH=(int)(batH*0.85), spriteW=spriteH, groundY=hpH+(int)(batH*1.00);
+        boolean attackerIsP1=(attacker==player1);
+        int idleX=attackerIsP1?(int)(panelW*0.08):(int)(panelW*0.62);
+        int targetX=attackerIsP1?(int)(panelW*0.45):(int)(panelW*0.20);
+        int defenderX=attackerIsP1?(int)(panelW*0.62):(int)(panelW*0.08);
+        int spriteY=groundY-spriteH;
 
         SwingUtilities.invokeLater(() -> {
             animationPlaying = true;
-
-            if (attackerGif != null) {
-                attackerIcon = new ImageIcon(attackerGif);
-                attackerIcon.setImageObserver(gamePanel);
-                attackerAnimX = idleX; attackerAnimY = spriteY;
-                attackerAnimW = spriteW; attackerAnimH = spriteH;
-                attackerFlip  = !attackerIsP1;
+            if (attackerGif!=null) {
+                attackerIcon=new ImageIcon(attackerGif); attackerIcon.setImageObserver(gamePanel);
+                attackerAnimX=idleX; attackerAnimY=spriteY; attackerAnimW=spriteW; attackerAnimH=spriteH;
+                attackerFlip=!attackerIsP1;
             }
-
-            if (defenderGif != null) {
-                defenderIcon = new ImageIcon(defenderGif);
-                defenderIcon.setImageObserver(gamePanel);
-                defenderAnimX = defenderX; defenderAnimY = spriteY;
-                defenderAnimW = spriteW;   defenderAnimH = spriteH;
-                defenderFlip  = attackerIsP1;
+            if (defenderGif!=null) {
+                defenderIcon=new ImageIcon(defenderGif); defenderIcon.setImageObserver(gamePanel);
+                defenderAnimX=defenderX; defenderAnimY=spriteY; defenderAnimW=spriteW; defenderAnimH=spriteH;
+                defenderFlip=attackerIsP1;
             }
-
             gamePanel.repaint();
-
-            if (attackerGif != null) {
-                int steps     = 30;
-                int slideMs   = ANIM_DURATION_MS / 2;
-                int stepDelay = Math.max(1, slideMs / steps);
-
-                javax.swing.Timer slideForward = new javax.swing.Timer(stepDelay, null);
-                final int[] step = {0};
+            if (attackerGif!=null) {
+                int steps=30, slideMs=ANIM_DURATION_MS/2, stepDelay=Math.max(1,slideMs/steps);
+                javax.swing.Timer slideForward=new javax.swing.Timer(stepDelay,null);
+                final int[] step={0};
                 slideForward.addActionListener(e -> {
-                    step[0]++;
-                    float t    = (float) step[0] / steps;
-                    float ease = t < 0.5f ? 2 * t * t : -1 + (4 - 2 * t) * t;
-                    attackerAnimX = idleX + (int)((targetX - idleX) * ease);
-                    gamePanel.repaint();
-                    if (step[0] >= steps) {
-                        ((javax.swing.Timer) e.getSource()).stop();
-                        javax.swing.Timer slideBack = new javax.swing.Timer(stepDelay, null);
-                        final int[] step2 = {0};
+                    step[0]++; float t=(float)step[0]/steps;
+                    float ease=t<0.5f?2*t*t:-1+(4-2*t)*t;
+                    attackerAnimX=idleX+(int)((targetX-idleX)*ease); gamePanel.repaint();
+                    if (step[0]>=steps) {
+                        ((javax.swing.Timer)e.getSource()).stop();
+                        javax.swing.Timer slideBack=new javax.swing.Timer(stepDelay,null);
+                        final int[] step2={0};
                         slideBack.addActionListener(e2 -> {
-                            step2[0]++;
-                            float t2    = (float) step2[0] / steps;
-                            float ease2 = t2 < 0.5f ? 2 * t2 * t2 : -1 + (4 - 2 * t2) * t2;
-                            attackerAnimX = targetX + (int)((idleX - targetX) * ease2);
-                            gamePanel.repaint();
-                            if (step2[0] >= steps) ((javax.swing.Timer) e2.getSource()).stop();
+                            step2[0]++; float t2=(float)step2[0]/steps;
+                            float ease2=t2<0.5f?2*t2*t2:-1+(4-2*t2)*t2;
+                            attackerAnimX=targetX+(int)((idleX-targetX)*ease2); gamePanel.repaint();
+                            if (step2[0]>=steps) ((javax.swing.Timer)e2.getSource()).stop();
                         });
                         slideBack.start();
                     }
@@ -827,7 +604,6 @@ public class BattleScreen {
                 slideForward.start();
             }
         });
-
         new Thread(() -> {
             try { Thread.sleep(ANIM_DURATION_MS); } catch (InterruptedException ignored) {}
             SwingUtilities.invokeLater(this::hideAnimations);
@@ -835,21 +611,16 @@ public class BattleScreen {
     }
 
     private void hideAnimations() {
-        attackerIcon = null;
-        defenderIcon = null;
-        animationPlaying = false;
-        gamePanel.repaint();
+        attackerIcon=null; defenderIcon=null; animationPlaying=false; gamePanel.repaint();
     }
 
     public void triggerHitFlash(Character target) {
-        hitFlashTarget  = target;
-        hitFlashStartMs = System.currentTimeMillis();
-        javax.swing.Timer flashTimer = new javax.swing.Timer(16, null);
+        hitFlashTarget=target; hitFlashStartMs=System.currentTimeMillis();
+        javax.swing.Timer flashTimer=new javax.swing.Timer(16,null);
         flashTimer.addActionListener(e -> {
             gamePanel.repaint();
-            if (System.currentTimeMillis() - hitFlashStartMs > HIT_FLASH_DURATION_MS) {
-                hitFlashTarget = null;
-                ((javax.swing.Timer) e.getSource()).stop();
+            if (System.currentTimeMillis()-hitFlashStartMs>HIT_FLASH_DURATION_MS) {
+                hitFlashTarget=null; ((javax.swing.Timer)e.getSource()).stop();
             }
         });
         flashTimer.start();
@@ -873,20 +644,19 @@ public class BattleScreen {
         if (!waitingForInput || battleOver || animationPlaying) return;
         Character current = playerTurn ? player1 : player2;
         int choice = -1;
-        if      (btnBasic    != null && btnBasic.contains(mx,my))                                           choice = 1;
-        else if (btnSkill    != null && btnSkill.contains(mx,my)    && current.getCurrentMana() >= 30)      choice = 2;
-        else if (btnUltimate != null && btnUltimate.contains(mx,my) && current.getCurrentMana() >= 50)      choice = 3;
-        else if (btnRest     != null && btnRest.contains(mx,my))                                            choice = 4;
+        if      (btnBasic    != null && btnBasic.contains(mx,my))                                      choice=1;
+        else if (btnSkill    != null && btnSkill.contains(mx,my)    && current.getCurrentMana()>=30)   choice=2;
+        else if (btnUltimate != null && btnUltimate.contains(mx,my) && current.getCurrentMana()>=50)   choice=3;
+        else if (btnRest     != null && btnRest.contains(mx,my))                                       choice=4;
         if (choice != -1) executeAction(choice);
     }
 
     public void mouseMoved(int mx, int my) {
-        int prev = hoveredBtn;
-        hoveredBtn = -1;
-        if      (btnBasic    != null && btnBasic.contains(mx,my))    hoveredBtn = 0;
-        else if (btnSkill    != null && btnSkill.contains(mx,my))    hoveredBtn = 1;
-        else if (btnUltimate != null && btnUltimate.contains(mx,my)) hoveredBtn = 2;
-        else if (btnRest     != null && btnRest.contains(mx,my))     hoveredBtn = 3;
+        int prev = hoveredBtn; hoveredBtn = -1;
+        if      (btnBasic    != null && btnBasic.contains(mx,my))    hoveredBtn=0;
+        else if (btnSkill    != null && btnSkill.contains(mx,my))    hoveredBtn=1;
+        else if (btnUltimate != null && btnUltimate.contains(mx,my)) hoveredBtn=2;
+        else if (btnRest     != null && btnRest.contains(mx,my))     hoveredBtn=3;
         if (hoveredBtn != prev) gamePanel.repaint();
     }
 
@@ -894,33 +664,25 @@ public class BattleScreen {
         waitingForInput = false;
         Character current  = playerTurn ? player1 : player2;
         Character opponent = playerTurn ? player2 : player1;
-
         battleSystem.executePlayerTurn(current, opponent, skillChoice);
         addLog(current.getLastActionText());
-
         if (current.isLastActionFailed()) {
-            addLog("Not enough mana!");
-            waitingForInput = true;
-            gamePanel.repaint();
-            return;
+            addLog("Not enough mana!"); waitingForInput=true; gamePanel.repaint(); return;
         }
-
-        if (skillChoice == 4) {
+        if (skillChoice==4) {
             playAnimation(current, opponent, skillChoice);
             new Thread(() -> {
-                try { Thread.sleep(ANIM_DURATION_MS + 100); } catch (InterruptedException ignored) {}
+                try { Thread.sleep(ANIM_DURATION_MS+100); } catch (InterruptedException ignored) {}
                 SwingUtilities.invokeLater(() -> afterAnimation(skillChoice));
             }).start();
         } else {
             playAnimation(current, opponent, skillChoice);
-
             new Thread(() -> {
-                try { Thread.sleep(ANIM_DURATION_MS / 2); } catch (InterruptedException ignored) {}
+                try { Thread.sleep(ANIM_DURATION_MS/2); } catch (InterruptedException ignored) {}
                 SwingUtilities.invokeLater(() -> triggerHitFlash(opponent));
             }).start();
-
             new Thread(() -> {
-                try { Thread.sleep(ANIM_DURATION_MS + 100); } catch (InterruptedException ignored) {}
+                try { Thread.sleep(ANIM_DURATION_MS+100); } catch (InterruptedException ignored) {}
                 SwingUtilities.invokeLater(() -> afterAnimation(skillChoice));
             }).start();
         }
@@ -928,73 +690,54 @@ public class BattleScreen {
 
     private void afterAnimation(int skillChoice) {
         gamePanel.repaint();
-
         if (battleSystem.isBattleOver(player1, player2)) {
             battleOver = true;
             Character winner = battleSystem.getWinner(player1, player2);
-            Character loser  = winner == player1 ? player2 : player1;
-            flashMessage = winner != null ? winner.getName() + " WINS!" : "DRAW!";
+            flashMessage = winner!=null ? winner.getName()+" WINS!" : "DRAW!";
             flashTime    = System.currentTimeMillis();
             addLog("★ " + flashMessage);
             gamePanel.repaint();
-
             new Thread(() -> {
                 try { Thread.sleep(2400); } catch (InterruptedException ignored) {}
-                Character roundWinner = battleSystem.getWinner(player1, player2);
-                Character roundLoser  = roundWinner == player1 ? player2 : player1;
-                SwingUtilities.invokeLater(() ->
-                        gamePanel.onRoundOver(roundWinner, roundLoser));
+                Character rw = battleSystem.getWinner(player1, player2);
+                Character rl = rw==player1 ? player2 : player1;
+                SwingUtilities.invokeLater(() -> gamePanel.onRoundOver(rw, rl));
             }).start();
             return;
         }
-
         playerTurn = !playerTurn;
-
-        if (!playerTurn && (isAiMode || isArcadeMode)) {
-            addLog(player2.getName() + " is thinking...");
-            gamePanel.repaint();
+        if (!playerTurn && (isAiMode||isArcadeMode)) {
+            addLog(player2.getName()+" is thinking..."); gamePanel.repaint();
             new Thread(() -> {
                 try { Thread.sleep(900); } catch (InterruptedException ignored) {}
-                SwingUtilities.invokeLater(() ->
-                        executeAction(battleSystem.getAiSkillChoice(player2)));
+                SwingUtilities.invokeLater(() -> executeAction(battleSystem.getAiSkillChoice(player2)));
             }).start();
         } else {
             waitingForInput = true;
-            addLog("What will " + (playerTurn ? player1 : player2).getName() + " do?");
+            addLog("What will "+(playerTurn?player1:player2).getName()+" do?");
             gamePanel.repaint();
         }
     }
 
     private String getSpriteKey(Character ch) {
         String name = ch.getName();
-        name = name.replaceAll("^(P1|P2|AI)\\s+", "");
-        if (name.contains(", ")) {
-            name = name.substring(name.lastIndexOf(", ") + 2);
-        }
-        name = name.replaceAll("^The\\s+", "");
+        name = name.replaceAll("^(P1|P2|AI)\\s+","");
+        if (name.contains(", ")) name = name.substring(name.lastIndexOf(", ")+2);
+        name = name.replaceAll("^The\\s+","");
         String[] knownKeys = {"Jollibee","RonaldMcDonald","BurgerKing","ColonelSanders",
                 "TacoBell","Wendys","Poco","Julies"};
-        String clean = name.replaceAll("[^a-zA-Z]", "");
-        for (String key : knownKeys) {
-            if (clean.toLowerCase().startsWith(key.toLowerCase())) {
-                return key;
-            }
-        }
+        String clean = name.replaceAll("[^a-zA-Z]","");
+        for (String key : knownKeys)
+            if (clean.toLowerCase().startsWith(key.toLowerCase())) return key;
         return clean;
     }
 
     private void addLog(String text) {
-        if (text == null || text.isEmpty()) return;
-        if (text.length() > 38) {
-            battleLog.add(text.substring(0, 37) + "-");
-            battleLog.add(text.substring(37));
-        } else {
-            battleLog.add(text);
-        }
-        if (battleLog.size() > 60) battleLog.remove(0);
+        if (text==null||text.isEmpty()) return;
+        if (text.length()>38) { battleLog.add(text.substring(0,37)+"-"); battleLog.add(text.substring(37)); }
+        else battleLog.add(text);
+        if (battleLog.size()>60) battleLog.remove(0);
     }
 
-    private int sf(int width, int base) {
-        return Math.max(7, (int)(base * width / 640.0));
-    }
+    private int sf(int width, int base) { return Math.max(7,(int)(base*width/640.0)); }
 }
