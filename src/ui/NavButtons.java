@@ -43,24 +43,28 @@ public class NavButtons {
     public static void drawBattle(Graphics2D g2d, int width, int hpBarH, boolean isArcadeMode) {
         loadIcons();
 
-        int btnW = (int)(width   * 0.07);
-        int btnH = (int)(hpBarH  * 0.28);
-        int gap  = (int)(width   * 0.015);
+        // Settings button size
+        int sBtnH = (int)(hpBarH * 0.28);
+        int sBtnW = sBtnH; // square
 
-        int totalW = btnW * 2 + gap;
+        // Leaderboard button size
+        int lBtnH = (int)(hpBarH * 0.28);
+        int lBtnW = (int)(sBtnH * 2);
+
+        int gap  = (int)(width * 0.015);
+
+        int totalW = sBtnW + lBtnW + gap;
         int startX = (width - totalW) / 2;
 
         int cy;
         if (isArcadeMode) {
-            // No pips — vertically centre in the HP bar
-            cy = (hpBarH - btnH) / 2;
+            cy = (hpBarH - Math.max(sBtnH, lBtnH)) / 2;
         } else {
-            // Pips occupy the vertical centre; sit buttons in the lower quarter
-            cy = hpBarH / 2 + (int)(hpBarH * 0.08);
+            cy = hpBarH / 2 + (int)(hpBarH * 0.2);
         }
 
-        settingsBtn    = new Rectangle(startX,              cy, btnW, btnH);
-        leaderboardBtn = new Rectangle(startX + btnW + gap, cy, btnW, btnH);
+        settingsBtn    = new Rectangle(startX,              cy, sBtnW, sBtnH);
+        leaderboardBtn = new Rectangle(startX + sBtnW + gap, cy, lBtnW, lBtnH);
 
         drawBtn(g2d, leaderboardBtn, leaderboardIcon, "L", new Color(100, 60, 140));
         drawBtn(g2d, settingsBtn,    settingsIcon,    "S", new Color(60,  80, 160));

@@ -18,62 +18,37 @@ import java.util.List;
 import java.util.Map;
 
 
-/**
- * BattleScreen — Pokemon-style layout with animated GIF support
- *
- * GIF animations use JLabel + ImageIcon (Swing animates GIFs natively).
- * Two JLabels are overlaid on the GamePanel:
- *   - attackerLabel : plays attacker's attack GIF (left or right side)
- *   - defenderLabel : plays defender's hit GIF
- *
- * File naming convention (place in /resources/gifs/):
- *   <CharClassName>_basic.gif
- *   <CharClassName>_skill.gif
- *   <CharClassName>_ultimate.gif
- *   <CharClassName>_hit.gif
- *
- * Layout:
- *   TOP    : HP bars with portrait icons
- *   MIDDLE : Battle background + sprites (player left, enemy right+flipped)
- *   BOTTOM : Log box (left) | 4 attack buttons 2x2 (right)
- *            Red=Basic  Green=Skill  Yellow=Ultimate  Blue=Rest
- */
 public class BattleScreen {
 
-    // ── Round starter indicator ───────────────────────────────────────────
     private boolean showRoundStart  = false;
     private long    roundStartTime  = 0;
     private int     currentRound    = 1;
-    private static final long ROUND_INDICATOR_MS = 2000; // how long it stays visible
+    private static final long ROUND_INDICATOR_MS = 2000;
 
     private GamePanel gamePanel;
     private BattleSystem battleSystem;
 
-    // ── Assets ────────────────────────────────────────────────────────
-    private BufferedImage currentMap; // active map for this battle
-    private Map<String, BufferedImage> mapImages  = new HashMap<>(); // keyed by character name
+    private BufferedImage currentMap;
+    private Map<String, BufferedImage> mapImages  = new HashMap<>();
     private BufferedImage battleBottomBg;
     private BufferedImage btnBasicImg, btnSkillImg, btnUltimateImg, btnRestImg;
     private Map<String, BufferedImage> sprites    = new HashMap<>();
-    private Map<String, URL>           gifUrls    = new HashMap<>(); // GIF URLs for ImageIcon
-    private Map<String, ImageIcon>     idleIcons  = new HashMap<>(); // cached idle GIF icons
+    private Map<String, BufferedImage> bossSprites = new HashMap<>(); // NEW
+    private Map<String, URL>           gifUrls    = new HashMap<>();
+    private Map<String, ImageIcon>     idleIcons  = new HashMap<>();
     private Font pixelFont;
 
-    // ── GIF animation overlay labels ──────────────────────────────────
-    // Animation state (drawn directly so we can flip)
     private ImageIcon attackerIcon;
     private ImageIcon defenderIcon;
     private int attackerAnimX, attackerAnimY, attackerAnimW, attackerAnimH;
     private int defenderAnimX, defenderAnimY, defenderAnimW, defenderAnimH;
     private boolean attackerFlip, defenderFlip;
 
-    // Hit flash state
     private Character hitFlashTarget = null;
     private long hitFlashStartMs     = 0;
     private static final int HIT_FLASH_DURATION_MS = 600;
     private boolean animationPlaying = false;
 
-    // ── Battle state ──────────────────────────────────────────────────
     private Character player1, player2;
     private boolean isAiMode      = false;
     private boolean isArcadeMode  = false;
@@ -83,25 +58,19 @@ public class BattleScreen {
     private boolean waitingForInput = true;
     private boolean battleOver    = false;
 
-    // ── Battle log ────────────────────────────────────────────────────
     private List<String> battleLog = new ArrayList<>();
 
-    // ── Button hit-zones ──────────────────────────────────────────────
     private Rectangle btnBasic, btnSkill, btnUltimate, btnRest;
     private int hoveredBtn = -1;
 
-    // ── Flash ─────────────────────────────────────────────────────────
     private String flashMessage = "";
     private long   flashTime    = 0;
     private static final long FLASH_MS = 2000;
 
-    // ── Animation duration ────────────────────────────────────────────
     private static final int ANIM_DURATION_MS = 1500;
 
-    // ── Layout constants (recalculated each draw) ─────────────────────
     private int hpBarH, battleAreaY, battleH, bottomY, bottomH;
 
-    // ── Legacy nav button refs (kept null to avoid stale click zones) ──
     private Rectangle battleSettingsBtn, battleLeaderboardBtn;
 
     public BattleScreen(GamePanel gamePanel) {
@@ -116,7 +85,7 @@ public class BattleScreen {
         this.currentRound    = round;
         this.showRoundStart  = true;
         this.roundStartTime  = System.currentTimeMillis();
-        this.waitingForInput = false; // block input until indicator finishes
+        this.waitingForInput = false;
     }
 
     private void drawRoundStartIndicator(Graphics2D g2d, int width, int height) {
@@ -124,7 +93,6 @@ public class BattleScreen {
 
         long elapsed = System.currentTimeMillis() - roundStartTime;
 
-        // Done — re-enable input
         if (elapsed >= ROUND_INDICATOR_MS) {
             showRoundStart   = false;
             waitingForInput  = true;
@@ -132,7 +100,6 @@ public class BattleScreen {
             return;
         }
 
-        // Fade in for first 300ms, hold, fade out last 400ms
         float alpha;
         if (elapsed < 300) {
             alpha = elapsed / 300f;
@@ -143,7 +110,6 @@ public class BattleScreen {
         }
         alpha = Math.max(0f, Math.min(1f, alpha));
 
-        // Scale: pop in from 1.4x → 1.0x in first 400ms
         float scale = elapsed < 400
                 ? 1f + (1f - elapsed / 400f) * 0.4f
                 : 1f;
@@ -161,7 +127,6 @@ public class BattleScreen {
         g2d.scale(scale, scale);
         g2d.translate(-cx, -cy);
 
-        // "ROUND X" line
         Font roundFont = pixelFont.deriveFont((float) sf(width, 32));
         g2d.setFont(roundFont);
         FontMetrics rfm = g2d.getFontMetrics();
@@ -169,13 +134,11 @@ public class BattleScreen {
         int rx = cx - rfm.stringWidth(roundText) / 2;
         int ry = cy - (int)(height * 0.04);
 
-        // Gold outline
         g2d.setColor(new Color(0, 0, 0, 180));
         g2d.drawString(roundText, rx + 3, ry + 3);
         g2d.setColor(new Color(255, 215, 0));
         g2d.drawString(roundText, rx, ry);
 
-        // Divider line
         int lineY = ry + (int)(height * 0.025);
         g2d.setColor(new Color(255, 215, 0, 180));
         g2d.setStroke(new BasicStroke(3));
@@ -183,7 +146,6 @@ public class BattleScreen {
                 cx + rfm.stringWidth(roundText)/2, lineY);
         g2d.setStroke(new BasicStroke(1));
 
-        // "FIGHT!" line
         Font fightFont = pixelFont.deriveFont((float) sf(width, 22));
         g2d.setFont(fightFont);
         FontMetrics ffm = g2d.getFontMetrics();
@@ -204,10 +166,9 @@ public class BattleScreen {
         g2d.setTransform(old);
         g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1f));
 
-        gamePanel.repaint(); // keep animating
+        gamePanel.repaint();
     }
 
-    // ── Asset loading ─────────────────────────────────────────────────
     private void loadFont() {
         try {
             InputStream is = getClass().getResourceAsStream("/resources/fonts/ARCADECLASSIC.TTF");
@@ -220,32 +181,31 @@ public class BattleScreen {
     }
 
     private void loadAssets() {
-        // Maps — load all 5
         mapImages.put("Jollibee",       tryLoadImage("/resources/Maps/jollibee_map.png"));
         mapImages.put("RonaldMcDonald", tryLoadImage("/resources/Maps/mcdonalds_map.png"));
         mapImages.put("BurgerKing",     tryLoadImage("/resources/Maps/burgerking_map.png"));
         mapImages.put("Poco",           tryLoadImage("/resources/potatocorner_map.png"));
         mapImages.put("Julies",         tryLoadImage("/resources/julies_map.png"));
 
-        // Bottom panel background
         battleBottomBg = tryLoadImage("/resources/battle_bottom_bg.png",
                 "/resources/bottom_panel.png");
 
-        // Button images
         btnBasicImg    = tryLoadImage("/resources/btn_basic.png");
         btnSkillImg    = tryLoadImage("/resources/btn_skill.png");
         btnUltimateImg = tryLoadImage("/resources/btn_ultimate.png");
         btnRestImg     = tryLoadImage("/resources/btn_rest.png");
 
-        // Character sprites (static PNG for idle fallback)
         String[] charNames = {"Jollibee","RonaldMcDonald","BurgerKing","ColonelSanders",
                 "TacoBell","Wendys","Poco","Julies"};
         for (String n : charNames) {
             BufferedImage img = tryLoadImage("/resources/sprites/" + n + ".png");
             if (img != null) sprites.put(n, img);
+
+            // Load boss PNG
+            BufferedImage bossImg = tryLoadImage("/resources/sprites/" + n + "/" + n + "_boss.png");
+            if (bossImg != null) bossSprites.put(n, bossImg);
         }
 
-        // GIF URLs - idle + attack animations, all in per-character folders
         String[] suffixes = {"_idle","_basic","_skill","_ultimate","_hit"};
         for (String n : charNames) {
             for (String s : suffixes) {
@@ -253,7 +213,6 @@ public class BattleScreen {
                 URL url = getClass().getResource(path);
                 if (url != null) gifUrls.put(n + s, url);
             }
-            // Cache idle icon so it animates continuously without resetting
             URL idleUrl = gifUrls.get(n + "_idle");
             if (idleUrl != null) {
                 ImageIcon icon = new ImageIcon(idleUrl);
@@ -273,13 +232,11 @@ public class BattleScreen {
         return null;
     }
 
-    // ── GIF animation setup ───────────────────────────────────────────
     private void setupAnimationLabels() {
         attackerIcon = null;
         defenderIcon = null;
     }
 
-    // ── Start battle ──────────────────────────────────────────────────
     public void startBattle(Character p1, Character p2,
                             boolean aiMode, boolean arcadeMode,
                             int round, int maxRounds) {
@@ -296,33 +253,28 @@ public class BattleScreen {
         this.flashMessage     = "";
         this.battleLog.clear();
         hideAnimations();
-        selectMap(p2, arcadeMode); // pick map based on mode
+        selectMap(p2, arcadeMode);
         addLog("What will " + p1.getName() + " do?");
         gamePanel.repaint();
     }
 
-    // ── Main draw ─────────────────────────────────────────────────────
     public void draw(Graphics g, int width, int height) {
         if (player1 == null || player2 == null) return;
         Graphics2D g2d = (Graphics2D) g;
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING,      RenderingHints.VALUE_ANTIALIAS_ON);
         g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
 
-        // Layout zones
         hpBarH      = (int)(height * 0.18);
         bottomH     = (int)(height * 0.30);
         battleH     = height - hpBarH - bottomH;
         battleAreaY = hpBarH;
         bottomY     = hpBarH + battleH;
 
-        // 1. Battle background
         drawBattleBackground(g2d, width, battleH);
 
-        // 2. Sprites (idle) or attack GIF animations
         if (!animationPlaying) {
             drawSprites(g2d, width);
         } else {
-            // Draw attack/hit GIFs with flipping support
             if (attackerIcon != null) {
                 drawGif(g2d, attackerIcon, attackerAnimX, attackerAnimY,
                         attackerAnimW, attackerAnimH, attackerFlip);
@@ -330,7 +282,6 @@ public class BattleScreen {
             if (defenderIcon != null) {
                 drawGif(g2d, defenderIcon, defenderAnimX, defenderAnimY,
                         defenderAnimW, defenderAnimH, defenderFlip);
-                // Hit flash on defender during attack animation
                 if (hitFlashTarget != null && hitFlashStartMs > 0) {
                     long elapsed = System.currentTimeMillis() - hitFlashStartMs;
                     if (elapsed < HIT_FLASH_DURATION_MS) {
@@ -347,31 +298,19 @@ public class BattleScreen {
             }
         }
 
-        // 3. HP bars (includes nav buttons + pips)
         drawHpBars(g2d, width);
-
-        // 4. Round label — all modes (arcade uses arcadeRound, pvp/pvai uses MatchManager)
         drawRoundLabel(g2d, width);
-
-        // 5. Bottom panel
         drawBottomPanel(g2d, width, height);
-
-        // 6. Flash
         drawFlash(g2d, width, height);
-
         drawRoundStartIndicator(g2d, width, height);
     }
 
-    // ── Battle background ─────────────────────────────────────────────
     private void selectMap(Character enemy, boolean arcadeMode) {
         if (arcadeMode) {
-            // Arcade: map tied to enemy character
             String key = getSpriteKey(enemy);
             currentMap = mapImages.get(key);
-            // Fallback: if no map for this enemy, pick random
             if (currentMap == null) currentMap = getRandomMap();
         } else {
-            // PVP / PvAI: random map
             currentMap = getRandomMap();
         }
     }
@@ -402,7 +341,6 @@ public class BattleScreen {
         }
     }
 
-    // ── Sprites ───────────────────────────────────────────────────────
     private void drawSprites(Graphics2D g2d, int width) {
         int spriteH = (int)(battleH * 0.85);
         int spriteW = spriteH;
@@ -421,7 +359,7 @@ public class BattleScreen {
                                 int x, int y, int w, int h, boolean flip) {
         String key = getSpriteKey(ch);
 
-        // Use animated idle GIF if available (use cached icon)
+        // Normal idle GIF
         ImageIcon idleIcon = idleIcons.get(key);
         if (idleIcon != null) {
             drawGif(g2d, idleIcon, x, y, w, h, flip);
@@ -436,7 +374,6 @@ public class BattleScreen {
                     g2d.drawImage(sprite, x, y, w, h, null);
                 }
             } else {
-                // Placeholder
                 g2d.setColor(flip ? new Color(200,80,80,180) : new Color(80,120,200,180));
                 g2d.fillRoundRect(x + w/4, y + h/6, w/2, h*5/6, 12, 12);
                 g2d.fillOval(x + w/3, y, w/3, w/3);
@@ -450,7 +387,6 @@ public class BattleScreen {
         }
     }
 
-    // ── Draw GIF with optional horizontal flip ───────────────────────
     private void drawGif(Graphics2D g2d, ImageIcon icon,
                          int x, int y, int w, int h, boolean flip) {
         if (flip) {
@@ -464,7 +400,6 @@ public class BattleScreen {
         }
     }
 
-    // ── HP bars ───────────────────────────────────────────────────────
     private void drawHpBars(Graphics2D g2d, int width) {
         g2d.setColor(new Color(0,0,0,180));
         g2d.fillRect(0, 0, width, hpBarH);
@@ -502,24 +437,18 @@ public class BattleScreen {
                 padY + (int)(portraitSize*0.72),
                 p2BarW, barH, width);
 
-        // Win pips for PVP/AI only
+        // Nav buttons drawn FIRST so pips appear on top
+        NavButtons.drawBattle(g2d, width, hpBarH, isArcadeMode);
+
+        // Win pips for PVP/AI only, drawn AFTER nav buttons (below them visually)
         if (!isArcadeMode) {
             drawWinPips(g2d, width, hpBarH);
         }
 
-        // Nav buttons — centred below pips (or centred in bar for arcade)
-        NavButtons.drawBattle(g2d, width, hpBarH, isArcadeMode);
-
-        // Clear legacy nav button refs so they don't intercept clicks
         battleSettingsBtn    = null;
         battleLeaderboardBtn = null;
     }
 
-    /**
-     * Draws best-of-3 win indicators in the centre of the HP bar area.
-     * P1 pips grow leftward from centre, P2 pips grow rightward.
-     * Filled circle = win earned, hollow = not yet won.
-     */
     private void drawWinPips(Graphics2D g2d, int width, int hpH) {
         MatchManager mm = gamePanel.getMatchManager();
         int p1Wins = mm.getP1Wins();
@@ -530,12 +459,14 @@ public class BattleScreen {
         int pipDiam = pipR * 2;
         int gap     = (int)(pipR * 0.9);
         int cx      = width / 2;
-        int cy      = hpH / 2;
+
+        // Pips positioned in the lower portion of the HP bar, beneath nav buttons
+        int cy = (int)(hpH * 0.50);
 
         // P1 pips: left of centre
         for (int i = 0; i < needed; i++) {
             int px = cx - gap - pipDiam - i * (pipDiam + gap);
-            int py = cy - pipR + (int)(hpH * 0.04);
+            int py = cy - pipR;
             if (i < p1Wins) {
                 g2d.setColor(new Color(80, 220, 80));
                 g2d.fillOval(px, py, pipDiam, pipDiam);
@@ -550,7 +481,7 @@ public class BattleScreen {
         // P2 pips: right of centre
         for (int i = 0; i < needed; i++) {
             int px = cx + gap + i * (pipDiam + gap);
-            int py = cy - pipR + (int)(hpH * 0.04);
+            int py = cy - pipR;
             if (i < p2Wins) {
                 g2d.setColor(new Color(220, 80, 80));
                 g2d.fillOval(px, py, pipDiam, pipDiam);
@@ -561,7 +492,6 @@ public class BattleScreen {
                 g2d.setStroke(new BasicStroke(1));
             }
         }
-        // NOTE: Nav buttons are now handled by NavButtons.drawBattle() in drawHpBars
     }
 
     private void drawNavBtn(Graphics2D g2d, Rectangle r, String label) {
@@ -594,14 +524,19 @@ public class BattleScreen {
                 x + size*0.15f, y + size*0.15f, size*0.70f, size*0.70f));
 
         String key = getSpriteKey(ch);
-        BufferedImage sprite = sprites.get(key);
         int ix = x + (int)(size*0.15), iy = y + (int)(size*0.15), is = (int)(size*0.70);
-        if (sprite != null) {
+
+        // Use boss icon in arcade mode for opponent, normal sprite otherwise
+        BufferedImage portrait = (isArcadeMode && !ch.isPlayer() && bossSprites.containsKey(key))
+                ? bossSprites.get(key)
+                : sprites.get(key);
+
+        if (portrait != null) {
             if (flip)
-                g2d.drawImage(sprite, ix+is, iy, ix, iy+is,
-                        0, 0, sprite.getWidth(), sprite.getHeight(), null);
+                g2d.drawImage(portrait, ix+is, iy, ix, iy+is,
+                        0, 0, portrait.getWidth(), portrait.getHeight(), null);
             else
-                g2d.drawImage(sprite, ix, iy, is, is, null);
+                g2d.drawImage(portrait, ix, iy, is, is, null);
         } else {
             g2d.setColor(new Color(100,80,160));
             g2d.fillRect(ix, iy, is, is);
@@ -640,7 +575,6 @@ public class BattleScreen {
         g2d.drawString(label+" "+cur+"/"+max, x+3, y+h-1);
     }
 
-    // ── Round label (shown in HP bar area for all modes) ──────────────
     private void drawRoundLabel(Graphics2D g2d, int width) {
         int round = isArcadeMode
                 ? arcadeRound
@@ -656,7 +590,6 @@ public class BattleScreen {
         g2d.drawString(txt, rx, ry);
     }
 
-    // ── Bottom panel ──────────────────────────────────────────────────
     private void drawBottomPanel(Graphics2D g2d, int width, int height) {
         if (battleBottomBg != null) {
             g2d.drawImage(battleBottomBg, 0, bottomY, width, bottomH, null);
@@ -674,10 +607,8 @@ public class BattleScreen {
         int btnAreaW = width - btnAreaX - (int)(width * 0.02);
         int pad      = (int)(bottomH * 0.06);
 
-        // Log box
         drawLogBox(g2d, (int)(width*0.01), bottomY + pad, logW, bottomH - pad*2, width);
 
-        // Buttons — disabled while animation plays
         boolean canAct = !battleOver && waitingForInput && !animationPlaying
                 && (playerTurn || (!isAiMode && !isArcadeMode));
 
@@ -758,7 +689,6 @@ public class BattleScreen {
                 g2d.fillRoundRect(r.x, r.y, r.width, r.height, 10, 10);
             }
         } else {
-            // Fallback coloured button
             Color bg = !canUse ? new Color(60,55,70) : (isHovered ? hover : base);
             g2d.setColor(bg);
             g2d.fillRoundRect(r.x, r.y, r.width, r.height, 10, 10);
@@ -785,7 +715,6 @@ public class BattleScreen {
         }
     }
 
-    // ── Flash ─────────────────────────────────────────────────────────
     private void drawFlash(Graphics2D g2d, int width, int height) {
         if (flashMessage.isEmpty()) return;
         long elapsed = System.currentTimeMillis() - flashTime;
@@ -806,11 +735,6 @@ public class BattleScreen {
         gamePanel.repaint();
     }
 
-    // ── GIF animation ─────────────────────────────────────────────────
-    /**
-     * Plays the attacker's attack GIF on their side, and the defender's
-     * hit GIF on the other side. Both play for ANIM_DURATION_MS then hide.
-     */
     private void playAnimation(Character attacker, Character defender, int skillChoice) {
         String attackerKey = getSpriteKey(attacker);
         String defenderKey = getSpriteKey(defender);
@@ -818,7 +742,7 @@ public class BattleScreen {
         String attackSuffix = skillChoice == 1 ? "_basic"
                 : skillChoice == 2 ? "_skill"
                 : skillChoice == 3 ? "_ultimate"
-                : null; // rest has no attack GIF
+                : null;
 
         URL attackerGif = attackSuffix != null ? gifUrls.get(attackerKey + attackSuffix) : null;
         URL defenderGif = gifUrls.get(defenderKey + "_hit");
@@ -826,7 +750,6 @@ public class BattleScreen {
         int panelW = gamePanel.getWidth();
         int panelH = gamePanel.getHeight();
 
-        // Recalc layout
         int hpH     = (int)(panelH * 0.18);
         int botH    = (int)(panelH * 0.30);
         int batH    = panelH - hpH - botH;
@@ -834,12 +757,9 @@ public class BattleScreen {
         int spriteW = spriteH;
         int groundY = hpH + (int)(batH * 1.00);
 
-        // Attacker is player1 = left, player2 = right
         boolean attackerIsP1 = (attacker == player1);
 
-        // Idle positions (start of slide)
         int idleX    = attackerIsP1 ? (int)(panelW * 0.08) : (int)(panelW * 0.62);
-        // Target positions (where attacker slides toward opponent)
         int targetX  = attackerIsP1 ? (int)(panelW * 0.45) : (int)(panelW * 0.20);
         int defenderX = attackerIsP1 ? (int)(panelW * 0.62) : (int)(panelW * 0.08);
         int spriteY   = groundY - spriteH;
@@ -865,13 +785,11 @@ public class BattleScreen {
 
             gamePanel.repaint();
 
-            // Smooth slide — only if attacker has a GIF
             if (attackerGif != null) {
                 int steps     = 30;
                 int slideMs   = ANIM_DURATION_MS / 2;
                 int stepDelay = Math.max(1, slideMs / steps);
 
-                // Slide forward toward opponent
                 javax.swing.Timer slideForward = new javax.swing.Timer(stepDelay, null);
                 final int[] step = {0};
                 slideForward.addActionListener(e -> {
@@ -882,7 +800,6 @@ public class BattleScreen {
                     gamePanel.repaint();
                     if (step[0] >= steps) {
                         ((javax.swing.Timer) e.getSource()).stop();
-                        // Slide back to idle position
                         javax.swing.Timer slideBack = new javax.swing.Timer(stepDelay, null);
                         final int[] step2 = {0};
                         slideBack.addActionListener(e2 -> {
@@ -900,7 +817,6 @@ public class BattleScreen {
             }
         });
 
-        // Hide after duration
         new Thread(() -> {
             try { Thread.sleep(ANIM_DURATION_MS); } catch (InterruptedException ignored) {}
             SwingUtilities.invokeLater(this::hideAnimations);
@@ -917,7 +833,6 @@ public class BattleScreen {
     public void triggerHitFlash(Character target) {
         hitFlashTarget  = target;
         hitFlashStartMs = System.currentTimeMillis();
-        // Repaint repeatedly for the flash duration
         javax.swing.Timer flashTimer = new javax.swing.Timer(16, null);
         flashTimer.addActionListener(e -> {
             gamePanel.repaint();
@@ -929,9 +844,7 @@ public class BattleScreen {
         flashTimer.start();
     }
 
-    // ── Execute action ────────────────────────────────────────────────
     public void mouseClicked(int mx, int my) {
-        // Nav buttons (centred in HP bar, always present including arcade)
         if (NavButtons.handleClick(mx, my, gamePanel)) return;
 
         if (!waitingForInput || battleOver || animationPlaying) return;
@@ -969,7 +882,6 @@ public class BattleScreen {
             return;
         }
 
-        // Skip attack animation for Rest — no hit on opponent
         if (skillChoice == 4) {
             playAnimation(current, opponent, skillChoice);
             new Thread(() -> {
@@ -1005,8 +917,6 @@ public class BattleScreen {
 
             new Thread(() -> {
                 try { Thread.sleep(2400); } catch (InterruptedException ignored) {}
-                // Always delegate to GamePanel — it consults MatchManager to decide
-                // whether this ends the match or just the round.
                 Character roundWinner = battleSystem.getWinner(player1, player2);
                 Character roundLoser  = roundWinner == player1 ? player2 : player1;
                 SwingUtilities.invokeLater(() ->
@@ -1032,24 +942,13 @@ public class BattleScreen {
         }
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────
     private String getSpriteKey(Character ch) {
         String name = ch.getName();
-
-        // Strip P1/P2/AI prefixes
         name = name.replaceAll("^(P1|P2|AI)\\s+", "");
-
-        // Strip arcade flavour prefix — everything before and including the last ", "
-        // e.g. "Keeia's favourite, Poco the Potato" → "Poco the Potato"
         if (name.contains(", ")) {
             name = name.substring(name.lastIndexOf(", ") + 2);
         }
-
-        // Strip "The " prefix — e.g. "The Burger King" → "Burger King"
         name = name.replaceAll("^The\\s+", "");
-
-        // Now match against known sprite keys by checking startsWith
-        // This handles "Poco the Potato" → "Poco", "Julie's the Baker" → "Julies" etc.
         String[] knownKeys = {"Jollibee","RonaldMcDonald","BurgerKing","ColonelSanders",
                 "TacoBell","Wendys","Poco","Julies"};
         String clean = name.replaceAll("[^a-zA-Z]", "");
