@@ -209,10 +209,6 @@ public class GamePanel extends JPanel {
         opponent.setPlayer(false);
         opponent.setName(characterManager.getArcadeName(opponent.getName()));
 
-        // Full HP/Mana reset for the player at the start of each new opponent
-        arcadePlayer.setHealth(arcadePlayer.getMaxHealth());
-        arcadePlayer.setCurrentMana(arcadePlayer.getMaxMana());
-
         matchManager.startMatch(arcadePlayer, opponent, false, true);
         launchRound();
     }
