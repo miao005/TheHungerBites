@@ -62,7 +62,7 @@ public class ArcadeRewardScreen {
         btn3 = new Rectangle(btnX, (int)(height * 0.33) + (btnH + gap) * 2, btnW, btnH);
         btn4 = new Rectangle(btnX, (int)(height * 0.33) + (btnH + gap) * 3, btnW, btnH);
 
-        drawRewardBtn(g2d, btn1, "1. Heal 50% HP + Full Mana",  new Color(40,  160, 80),  width);
+        drawRewardBtn(g2d, btn1, "1. Heal 100% HP + Full Mana",  new Color(40,  160, 80),  width);
         drawRewardBtn(g2d, btn2, "2. +100% Damage Boost",       new Color(60,  80,  200), width);
         drawRewardBtn(g2d, btn3, "3. +25 Max Health",           new Color(160, 40,  160), width);
         drawRewardBtn(g2d, btn4, "4. +15 Max Mana",             new Color(180, 140, 20),  width);
@@ -104,8 +104,7 @@ public class ArcadeRewardScreen {
     private void applyReward(int choice) {
         switch (choice) {
             case 1:
-                int heal = (int)(player.getMaxHealth() * 0.5);
-                player.setHealth(Math.min(player.getHealth() + heal, player.getMaxHealth()));
+                player.setHealth(player.getMaxHealth());
                 player.setCurrentMana(player.getMaxMana());
                 break;
             case 2:

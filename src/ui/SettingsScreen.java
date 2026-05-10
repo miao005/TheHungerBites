@@ -39,11 +39,14 @@ public class SettingsScreen {
         g2d.setColor(Color.WHITE);
         String volLabel = "Volume: " + settings.getVolume() + "%";
         fm = g2d.getFontMetrics();
-        g2d.drawString(volLabel, cx - fm.stringWidth(volLabel) / 2, volY);
+        int labelW = fm.stringWidth(volLabel);
+        g2d.drawString(volLabel, cx - labelW / 2, volY);
 
-        int btnW = 36, btnH = 26;
-        volDownBtn = new Rectangle(cx - 130, volY + 8, btnW, btnH);
-        volUpBtn   = new Rectangle(cx + 94,  volY + 8, btnW, btnH);
+        int btnW = sf(width, 50), btnH = sf(width, 30);
+        int btnGap = sf(width, 20);
+        int btnY = volY + sf(width, 12);
+        volDownBtn = new Rectangle(cx - btnGap/2 - btnW, btnY, btnW, btnH);
+        volUpBtn   = new Rectangle(cx + btnGap/2,        btnY, btnW, btnH);
         drawBtn(g2d, volDownBtn, "-", new Color(80, 60, 140), width);
         drawBtn(g2d, volUpBtn,   "+", new Color(80, 60, 140), width);
 
@@ -62,10 +65,11 @@ public class SettingsScreen {
                 "Art & Sprites: Your Artist",
                 "Music: OpenGameArt"
         };
+        int lineH = g2d.getFontMetrics().getHeight(); // scale with font size
         for (int i = 0; i < credits.length; i++) {
             fm = g2d.getFontMetrics();
             g2d.drawString(credits[i], cx - fm.stringWidth(credits[i]) / 2,
-                    credY + 28 + i * 22);
+                    credY + sf(width, 28) + i * lineH);
         }
 
         // Navigation buttons

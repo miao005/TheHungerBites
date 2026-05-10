@@ -840,7 +840,7 @@ public class BattleScreen {
         // Idle positions (start of slide)
         int idleX    = attackerIsP1 ? (int)(panelW * 0.08) : (int)(panelW * 0.62);
         // Target positions (where attacker slides toward opponent)
-        int targetX  = attackerIsP1 ? (int)(panelW * 0.35) : (int)(panelW * 0.20);
+        int targetX  = attackerIsP1 ? (int)(panelW * 0.45) : (int)(panelW * 0.20);
         int defenderX = attackerIsP1 ? (int)(panelW * 0.62) : (int)(panelW * 0.08);
         int spriteY   = groundY - spriteH;
 
@@ -935,11 +935,12 @@ public class BattleScreen {
         if (NavButtons.handleClick(mx, my, gamePanel)) return;
 
         if (!waitingForInput || battleOver || animationPlaying) return;
+        Character current = playerTurn ? player1 : player2;
         int choice = -1;
-        if      (btnBasic    != null && btnBasic.contains(mx,my))    choice = 1;
-        else if (btnSkill    != null && btnSkill.contains(mx,my))    choice = 2;
-        else if (btnUltimate != null && btnUltimate.contains(mx,my)) choice = 3;
-        else if (btnRest     != null && btnRest.contains(mx,my))     choice = 4;
+        if      (btnBasic    != null && btnBasic.contains(mx,my))                                           choice = 1;
+        else if (btnSkill    != null && btnSkill.contains(mx,my)    && current.getCurrentMana() >= 30)      choice = 2;
+        else if (btnUltimate != null && btnUltimate.contains(mx,my) && current.getCurrentMana() >= 50)      choice = 3;
+        else if (btnRest     != null && btnRest.contains(mx,my))                                            choice = 4;
         if (choice != -1) executeAction(choice);
     }
 

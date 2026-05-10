@@ -138,8 +138,6 @@ public class GamePanel extends JPanel {
         Character opponent = characterManager.createCharacter(arcadeOpponentIndices[arcadeCurrentOpponent]);
         opponent.setPlayer(false);
         opponent.setName(characterManager.getArcadeName(opponent.getName()));
-        arcadePlayer.setHealth(arcadePlayer.getMaxHealth());
-        arcadePlayer.setCurrentMana(arcadePlayer.getMaxMana());
         matchManager.startMatch(arcadePlayer, opponent, false, true);
         launchRound();
     }
