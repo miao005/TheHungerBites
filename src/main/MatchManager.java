@@ -1,19 +1,5 @@
 package main;
 
-/**
- * MatchManager — tracks best-of-3 state for a single match (PVP, PvAI, or one Arcade bout).
- *
- * Responsibilities:
- *  • Stores the canonical Character references for P1 and P2.
- *  • Counts wins for each side.
- *  • Decides after each round whether the match is over or another round is needed.
- *  • Resets characters to full HP/Mana between rounds (stats like damage boosts persist).
- *
- * OOP rationale:
- *  • Single Responsibility — all "is the match over?" logic lives here, not scattered
- *    across GamePanel / BattleScreen.
- *  • Encapsulation — win counters and round number are private; callers use clear methods.
- */
 public class MatchManager {
 
     // ── Constants ─────────────────────────────────────────────────────

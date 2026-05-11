@@ -121,30 +121,16 @@ public class BattleScreen {
         Font roundFont = minecraftFont.deriveFont((float) sf(width, 32));
         g2d.setFont(roundFont);
         FontMetrics rfm = g2d.getFontMetrics();
-        String roundText = "ROUND  " + currentRound;
-        int rx = cx - rfm.stringWidth(roundText) / 2;
-        int ry = cy - (int)(height * 0.04);
-        g2d.setColor(new Color(0,0,0,180)); g2d.drawString(roundText, rx+3, ry+3);
-        g2d.setColor(new Color(255,215,0)); g2d.drawString(roundText, rx, ry);
 
-        int lineY = ry + (int)(height * 0.025);
+
         g2d.setColor(new Color(255,215,0,180)); g2d.setStroke(new BasicStroke(3));
-        g2d.drawLine(cx - rfm.stringWidth(roundText)/2, lineY, cx + rfm.stringWidth(roundText)/2, lineY);
+
         g2d.setStroke(new BasicStroke(1));
 
         Font fightFont = minecraftFont.deriveFont((float) sf(width, 22));
         g2d.setFont(fightFont);
         FontMetrics ffm = g2d.getFontMetrics();
-        String fightText = elapsed > 600 ? "FIGHT!" : "";
-        if (!fightText.isEmpty()) {
-            float fa = Math.min(1f, (elapsed-600)/200f);
-            g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, Math.min(alpha,fa)));
-            int fx = cx - ffm.stringWidth(fightText)/2;
-            int fy = ry + (int)(height*0.08);
-            g2d.setColor(new Color(0,0,0,180)); g2d.drawString(fightText, fx+2, fy+2);
-            g2d.setColor(new Color(255,80,80));  g2d.drawString(fightText, fx, fy);
-            g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha));
-        }
+
 
         BufferedImage banner = roundBanners.get(currentRound);
         if (banner != null) {

@@ -1,4 +1,4 @@
 geof,100000
-kimjie,1
+kimjie,2
 keeia,1
 wasdwasdwasdwa,1

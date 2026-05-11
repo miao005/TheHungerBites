@@ -72,7 +72,7 @@ public class LeaderboardScreen {
         if (entries.isEmpty()) {
             g2d.setColor(new Color(150,150,150));
             g2d.setFont(mc(sf(width,14)));
-            String empty = "No records yet. Play PVP to get on the board!";
+            String empty = "No records yet. Play PVP or Arcade to get on the board!";
             fm = g2d.getFontMetrics();
             g2d.drawString(empty, cx-fm.stringWidth(empty)/2, height/2);
         }

@@ -134,8 +134,9 @@ public class GameOverScreen {
             g2d.drawString(stats, (width-fm.stringWidth(stats))/2, (int)(height*0.60));
         }
 
-        // Name input form
-        if (pvpMode && winner != null && !nameSubmitted) {
+        // Name input form — shown for PVP wins AND completed Arcade runs
+        boolean showNameEntry = (pvpMode || (arcadeMode && playerWon)) && winner != null && !nameSubmitted;
+        if (showNameEntry) {
             int cx = width/2;
             int boxY = (int)(height*0.63);
             g2d.setFont(mc(sf(width,12)));
@@ -173,7 +174,8 @@ public class GameOverScreen {
         }
 
         int btnW=(int)(width*0.28), btnH=(int)(height*0.10);
-        int btnY = (pvpMode && winner!=null && !nameSubmitted) ? (int)(height*0.87) : (int)(height*0.72);
+        boolean nameEntryActive = (pvpMode || (arcadeMode && playerWon)) && winner != null && !nameSubmitted;
+        int btnY = nameEntryActive ? (int)(height*0.87) : (int)(height*0.72);
         int gap=(int)(width*0.06), bx=(width-(btnW*2+gap))/2;
 
         btnPlayAgain = new Rectangle(bx,          btnY, btnW, btnH);
@@ -210,7 +212,8 @@ public class GameOverScreen {
     public void mouseClicked(int mx, int my) {
         if (NavButtons.handleClick(mx, my, gamePanel)) return;
 
-        if (pvpMode && !nameSubmitted && nameSubmitBtn != null && nameSubmitBtn.contains(mx, my)) {
+        boolean canSubmitName = (pvpMode || (arcadeMode && playerWon)) && !nameSubmitted;
+        if (canSubmitName && nameSubmitBtn != null && nameSubmitBtn.contains(mx, my)) {
             String trimmed = nameInput.trim();
             if (!trimmed.isEmpty() && leaderboard != null) {
                 leaderboard.recordWin(trimmed);
@@ -239,7 +242,7 @@ public class GameOverScreen {
     }
 
     public void keyTyped(char c) {
-        if (!pvpMode || nameSubmitted) return;
+        if ((!pvpMode && !(arcadeMode && playerWon)) || nameSubmitted) return;
         if (c == '\b' && nameInput.length() > 0)
             nameInput = nameInput.substring(0, nameInput.length()-1);
         else if (c != '\b' && nameInput.length() < 16 && c >= 32)
